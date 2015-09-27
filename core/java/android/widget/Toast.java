@@ -24,7 +24,12 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Color;
+import android.graphics.Palette;
 import android.graphics.PixelFormat;
+import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.os.Handler;
 import android.os.RemoteException;
@@ -44,7 +49,7 @@ import java.lang.annotation.RetentionPolicy;
  * A toast is a view containing a quick little message for the user.  The toast class
  * helps you create and show those.
  * {@more}
- *
+ * <p/>
  * <p>
  * When the view is shown to the user, appears as a floating view over the
  * application.  It will never receive focus.  The user will probably be in the
@@ -55,26 +60,30 @@ import java.lang.annotation.RetentionPolicy;
  * <p>
  * The easiest way to use this class is to call one of the static methods that constructs
  * everything you need and returns a new Toast object.
- *
+ * <p/>
  * <div class="special reference">
  * <h3>Developer Guides</h3>
  * <p>For information about creating Toast notifications, read the
  * <a href="{@docRoot}guide/topics/ui/notifiers/toasts.html">Toast Notifications</a> developer
  * guide.</p>
  * </div>
- */ 
+ */
 public class Toast {
     static final String TAG = "Toast";
     static final boolean localLOGV = false;
 
-    /** @hide */
+    /**
+     * @hide
+     */
     @IntDef({LENGTH_SHORT, LENGTH_LONG})
     @Retention(RetentionPolicy.SOURCE)
-    public @interface Duration {}
+    public @interface Duration {
+    }
 
     /**
      * Show the view or text notification for a short period of time.  This time
      * could be user-definable.  This is the default.
+     *
      * @see #setDuration
      */
     public static final int LENGTH_SHORT = 0;
@@ -82,6 +91,7 @@ public class Toast {
     /**
      * Show the view or text notification for a long period of time.  This time
      * could be user-definable.
+     *
      * @see #setDuration
      */
     public static final int LENGTH_LONG = 1;
@@ -95,8 +105,8 @@ public class Toast {
      * Construct an empty Toast object.  You must call {@link #setView} before you
      * can call {@link #show}.
      *
-     * @param context  The context to use.  Usually your {@link android.app.Application}
-     *                 or {@link android.app.Activity} object.
+     * @param context The context to use.  Usually your {@link android.app.Application}
+     *                or {@link android.app.Activity} object.
      */
     public Toast(Context context) {
         mContext = context;
@@ -106,7 +116,7 @@ public class Toast {
         mTN.mGravity = context.getResources().getInteger(
                 com.android.internal.R.integer.config_toastDefaultGravity);
     }
-    
+
     /**
      * Show the view for the specified duration.
      */
@@ -141,9 +151,10 @@ public class Toast {
             // Empty
         }
     }
-    
+
     /**
      * Set the view to show.
+     *
      * @see #getView
      */
     public void setView(View view) {
@@ -152,6 +163,7 @@ public class Toast {
 
     /**
      * Return the view.
+     *
      * @see #setView
      */
     public View getView() {
@@ -160,6 +172,7 @@ public class Toast {
 
     /**
      * Set how long to show the view for.
+     *
      * @see #LENGTH_SHORT
      * @see #LENGTH_LONG
      */
@@ -169,22 +182,23 @@ public class Toast {
 
     /**
      * Return the duration.
+     *
      * @see #setDuration
      */
     @Duration
     public int getDuration() {
         return mDuration;
     }
-    
+
     /**
      * Set the margins of the view.
      *
      * @param horizontalMargin The horizontal margin, in percentage of the
-     *        container width, between the container's edges and the
-     *        notification
-     * @param verticalMargin The vertical margin, in percentage of the
-     *        container height, between the container's edges and the
-     *        notification
+     *                         container width, between the container's edges and the
+     *                         notification
+     * @param verticalMargin   The vertical margin, in percentage of the
+     *                         container height, between the container's edges and the
+     *                         notification
      */
     public void setMargin(float horizontalMargin, float verticalMargin) {
         mTN.mHorizontalMargin = horizontalMargin;
@@ -207,6 +221,7 @@ public class Toast {
 
     /**
      * Set the location at which the notification should appear on the screen.
+     *
      * @see android.view.Gravity
      * @see #getGravity
      */
@@ -216,8 +231,9 @@ public class Toast {
         mTN.mY = yOffset;
     }
 
-     /**
+    /**
      * Get the location at which the notification should appear on the screen.
+     *
      * @see android.view.Gravity
      * @see #getGravity
      */
@@ -231,7 +247,7 @@ public class Toast {
     public int getXOffset() {
         return mTN.mX;
     }
-    
+
     /**
      * Return the Y offset in pixels to apply to the gravity's location.
      */
@@ -241,12 +257,13 @@ public class Toast {
 
     /**
      * Gets the LayoutParams for the Toast window.
+     *
      * @hide
      */
     public WindowManager.LayoutParams getWindowParams() {
         return mTN.mParams;
     }
-    
+
     /**
      * Make a standard toast that just contains a text view.
      *
@@ -255,7 +272,6 @@ public class Toast {
      * @param text     The text to show.  Can be formatted text.
      * @param duration How long to display the message.  Either {@link #LENGTH_SHORT} or
      *                 {@link #LENGTH_LONG}
-     *
      */
     public static Toast makeText(Context context, CharSequence text, @Duration int duration) {
         Toast result = new Toast(context);
@@ -263,9 +279,9 @@ public class Toast {
         LayoutInflater inflate = (LayoutInflater)
                 context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         View v = inflate.inflate(com.android.internal.R.layout.transient_notification, null);
-        TextView tv = (TextView)v.findViewById(com.android.internal.R.id.message);
+        TextView tv = (TextView) v.findViewById(com.android.internal.R.id.message);
         tv.setText(text);
-        
+
         result.mNextView = v;
         result.mDuration = duration;
 
@@ -280,24 +296,25 @@ public class Toast {
      * @param resId    The resource id of the string resource to use.  Can be formatted text.
      * @param duration How long to display the message.  Either {@link #LENGTH_SHORT} or
      *                 {@link #LENGTH_LONG}
-     *
      * @throws Resources.NotFoundException if the resource can't be found.
      */
-    public static Toast makeText(Context context, @StringRes int resId, @Duration int duration)
-                                throws Resources.NotFoundException {
+    public static Toast makeText(Context context, int resId, @Duration int duration)
+            throws Resources.NotFoundException {
         return makeText(context, context.getResources().getText(resId), duration);
     }
 
     /**
      * Update the text in a Toast that was previously created using one of the makeText() methods.
+     *
      * @param resId The new text for the Toast.
      */
-    public void setText(@StringRes int resId) {
+    public void setText(int resId) {
         setText(mContext.getText(resId));
     }
-    
+
     /**
      * Update the text in a Toast that was previously created using one of the makeText() methods.
+     *
      * @param s The new text for the Toast.
      */
     public void setText(CharSequence s) {
@@ -344,7 +361,7 @@ public class Toast {
         };
 
         private final WindowManager.LayoutParams mParams = new WindowManager.LayoutParams();
-        final Handler mHandler = new Handler();    
+        final Handler mHandler = new Handler();
 
         int mGravity;
         int mX, mY;
@@ -409,12 +426,31 @@ public class Toast {
                     Drawable icon = null;
                     try {
                         icon = pm.getApplicationIcon(packageName);
+                        Resources resources = pm.getResourcesForApplication(packageName);
+                        Bitmap bmp = BitmapFactory.decodeResource(resources, pm.getApplicationInfo(packageName, 0).icon);
+                        int bgColor;
+                        if (bmp == null)
+                            bgColor = Color.DKGRAY;
+                        else {
+                            Palette palette = Palette.generate(bmp);
+                            bgColor = palette.getVibrantColor(Color.DKGRAY);
+                        }
+                        TextView textView = (TextView) mView.findViewById(android.R.id.message);
+                        Drawable bg = textView.getBackground();
+                        bg.setColorFilter(bgColor, PorterDuff.Mode.SRC_ATOP);
+                        textView.setBackground(bg);
+                        if (Color.getBrightness(bgColor) > 200) {
+                            textView.setTextColor(Color.BLACK);
+                        } else {
+                            textView.setTextColor(Color.WHITE);
+                        }
+
                     } catch (PackageManager.NameNotFoundException e) {
                         // nothing to do
                     }
                     appIcon.setImageDrawable(icon);
                 }
-                mWM = (WindowManager)context.getSystemService(Context.WINDOW_SERVICE);
+                mWM = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
                 // We can resolve the Gravity here by using the Locale for getting
                 // the layout direction
                 final Configuration config = mView.getContext().getResources().getConfiguration();
@@ -455,7 +491,7 @@ public class Toast {
             event.setPackageName(mView.getContext().getPackageName());
             mView.dispatchPopulateAccessibilityEvent(event);
             accessibilityManager.sendAccessibilityEvent(event);
-        }        
+        }
 
         public void handleHide() {
             if (localLOGV) Log.v(TAG, "HANDLE HIDE: " + this + " mView=" + mView);

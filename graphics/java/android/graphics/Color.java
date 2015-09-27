@@ -404,6 +404,22 @@ public class Color {
         }
     }
 
+    /**
+     * @param color The color to get brightness.
+     * @return The brightness of the color in range of 0 to 255, where 0 is dark and 255 bright.
+     * 255 if the color is transparent
+     */
+
+    public static int getBrightness(int color) {
+        if (android.R.color.transparent == color)
+            return 255;
+
+        int[] rgb = {Color.red(color), Color.green(color), Color.blue(color)};
+
+        return (int) Math.sqrt(rgb[0] * rgb[0] * .241 + rgb[1]
+                * rgb[1] * .691 + rgb[2] * rgb[2] * .068);
+    }
+
     private static final HashMap<String, Integer> sColorNameMap;
 
     static {
