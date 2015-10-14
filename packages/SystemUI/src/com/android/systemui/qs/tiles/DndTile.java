@@ -118,18 +118,19 @@ public class DndTile extends QSTile<QSTile.BooleanState> {
         } else {
             int zen = Prefs.getInt(mContext, Prefs.Key.DND_FAVORITE_ZEN, Global.ZEN_MODE_ALARMS);
             mController.setZen(zen, null, TAG);
-            showDetail(true);
         }
     }
 
     @Override
     protected void handleSecondaryClick() {
-        handleClick();
+        handleLongClick();
     }
 
     @Override
     public void handleLongClick() {
-        mHost.startActivityDismissingKeyguard(ZEN_SETTINGS);
+        int zen = Prefs.getInt(mContext, Prefs.Key.DND_FAVORITE_ZEN, Global.ZEN_MODE_ALARMS);
+        mController.setZen(zen, null, TAG);
+        showDetail(true);
     }
 
     @Override

@@ -21,7 +21,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.database.ContentObserver;
-import android.media.AudioManager;
 import android.os.Handler;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -36,16 +35,15 @@ import com.android.internal.logging.MetricsConstants;
 import com.android.systemui.R;
 import com.android.systemui.qs.QSDetailItemsList;
 import com.android.systemui.qs.QSTile;
-import com.android.systemui.statusbar.policy.KeyguardMonitor;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
 import cyanogenmod.app.Profile;
 import cyanogenmod.app.ProfileManager;
 import cyanogenmod.app.StatusBarPanelCustomTile;
 import cyanogenmod.providers.CMSettings;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
 
 public class ProfilesTile extends QSTile<QSTile.State> {
 
@@ -71,12 +69,15 @@ public class ProfilesTile extends QSTile<QSTile.State> {
 
     @Override
     protected void handleClick() {
-        showDetail(true);
+        boolean state = CMSettings.System.getInt(mContext.getContentResolver(),
+                CMSettings.System.SYSTEM_PROFILES_ENABLED, 0) == 1;
+        CMSettings.System.putInt(mContext.getContentResolver(),
+                CMSettings.System.SYSTEM_PROFILES_ENABLED, state ? 0 : 1);
     }
 
     @Override
     protected void handleLongClick() {
-        mHost.startActivityDismissingKeyguard(PROFILES_SETTINGS);
+        showDetail(true);
     }
 
     @Override

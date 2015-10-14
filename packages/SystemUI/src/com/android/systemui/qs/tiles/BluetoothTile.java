@@ -29,9 +29,7 @@ import android.widget.AdapterView;
 import android.widget.ListView;
 
 import com.android.internal.logging.MetricsLogger;
-
 import com.android.settingslib.bluetooth.CachedBluetoothDevice;
-
 import com.android.systemui.R;
 import com.android.systemui.qs.QSDetailItems;
 import com.android.systemui.qs.QSDetailItems.Item;
@@ -39,14 +37,16 @@ import com.android.systemui.qs.QSDetailItemsList;
 import com.android.systemui.qs.QSTile;
 import com.android.systemui.statusbar.policy.BluetoothController;
 
-import cyanogenmod.app.StatusBarPanelCustomTile;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-/** Quick settings tile: Bluetooth **/
-public class BluetoothTile extends QSTile<QSTile.BooleanState>  {
+import cyanogenmod.app.StatusBarPanelCustomTile;
+
+/**
+ * Quick settings tile: Bluetooth
+ **/
+public class BluetoothTile extends QSTile<QSTile.BooleanState> {
     private static final Intent BLUETOOTH_SETTINGS = new Intent(Settings.ACTION_BLUETOOTH_SETTINGS);
 
     private final BluetoothController mController;
@@ -84,7 +84,7 @@ public class BluetoothTile extends QSTile<QSTile.BooleanState>  {
 
     @Override
     protected void handleClick() {
-        final boolean isEnabled = (Boolean)mState.value;
+        final boolean isEnabled = (Boolean) mState.value;
         MetricsLogger.action(mContext, getMetricsCategory(), !isEnabled);
         mController.setBluetoothEnabled(!isEnabled);
     }
@@ -100,7 +100,11 @@ public class BluetoothTile extends QSTile<QSTile.BooleanState>  {
 
     @Override
     protected void handleLongClick() {
-        mHost.startActivityDismissingKeyguard(BLUETOOTH_SETTINGS);
+        if (!mState.value) {
+            mState.value = true;
+            mController.setBluetoothEnabled(true);
+        }
+        showDetail(true);
     }
 
     @Override
@@ -244,7 +248,7 @@ public class BluetoothTile extends QSTile<QSTile.BooleanState>  {
 
         private void updateItems() {
             if (mAdapter == null) return;
-                final Collection<CachedBluetoothDevice> devices = mController.getDevices();
+            final Collection<CachedBluetoothDevice> devices = mController.getDevices();
             if (devices != null) {
                 mBluetoothItems.clear();
                 for (CachedBluetoothDevice device : devices) {

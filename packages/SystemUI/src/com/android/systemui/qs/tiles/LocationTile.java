@@ -97,14 +97,7 @@ public class LocationTile extends QSTile<QSTile.BooleanState> {
 
     @Override
     protected void handleClick() {
-        if(mController.isAdvancedSettingsEnabled()) {
-            showDetail(true);
-        } else {
-            boolean wasEnabled = mController.isLocationEnabled();
-            mController.setLocationEnabled(!wasEnabled);
-            MetricsLogger.action(mContext, getMetricsCategory(), !wasEnabled);
-            refreshState();
-        }
+        mController.setLocationEnabled(!mController.isLocationEnabled());
 
         mEnable.setAllowAnimation(true);
         mDisable.setAllowAnimation(true);
@@ -112,7 +105,7 @@ public class LocationTile extends QSTile<QSTile.BooleanState> {
 
     @Override
     protected void handleLongClick() {
-        mHost.startActivityDismissingKeyguard(LOCATION_SETTINGS_INTENT);
+        showDetail(true);
     }
 
     @Override

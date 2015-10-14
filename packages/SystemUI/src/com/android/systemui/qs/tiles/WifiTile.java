@@ -29,7 +29,6 @@ import android.widget.ListView;
 
 import com.android.internal.logging.MetricsLogger;
 import com.android.settingslib.wifi.AccessPoint;
-
 import com.android.systemui.R;
 import com.android.systemui.qs.QSDetailItems.Item;
 import com.android.systemui.qs.QSDetailItemsList;
@@ -41,12 +40,14 @@ import com.android.systemui.statusbar.policy.NetworkController.AccessPointContro
 import com.android.systemui.statusbar.policy.NetworkController.IconState;
 import com.android.systemui.statusbar.policy.SignalCallbackAdapter;
 
-import cyanogenmod.app.StatusBarPanelCustomTile;
-
 import java.util.ArrayList;
 import java.util.List;
 
-/** Quick settings tile: Wifi **/
+import cyanogenmod.app.StatusBarPanelCustomTile;
+
+/**
+ * Quick settings tile: Wifi
+ **/
 public class WifiTile extends QSTile<QSTile.SignalState> {
     private static final Intent WIFI_SETTINGS = new Intent(Settings.ACTION_WIFI_SETTINGS);
 
@@ -124,7 +125,7 @@ public class WifiTile extends QSTile<QSTile.SignalState> {
 
     @Override
     protected void handleLongClick() {
-        mHost.startActivityDismissingKeyguard(WIFI_SETTINGS);
+        handleSecondaryClick();
     }
 
     @Override
@@ -217,14 +218,14 @@ public class WifiTile extends QSTile<QSTile.SignalState> {
         @Override
         public String toString() {
             return new StringBuilder("CallbackInfo[")
-                .append("enabled=").append(enabled)
-                .append(",connected=").append(connected)
-                .append(",wifiSignalIconId=").append(wifiSignalIconId)
-                .append(",enabledDesc=").append(enabledDesc)
-                .append(",activityIn=").append(activityIn)
-                .append(",activityOut=").append(activityOut)
-                .append(",wifiSignalContentDescription=").append(wifiSignalContentDescription)
-                .append(']').toString();
+                    .append("enabled=").append(enabled)
+                    .append(",connected=").append(connected)
+                    .append(",wifiSignalIconId=").append(wifiSignalIconId)
+                    .append(",enabledDesc=").append(enabledDesc)
+                    .append(",activityIn=").append(activityIn)
+                    .append(",activityOut=").append(activityOut)
+                    .append(",wifiSignalContentDescription=").append(wifiSignalContentDescription)
+                    .append(']').toString();
         }
     }
 
@@ -233,7 +234,7 @@ public class WifiTile extends QSTile<QSTile.SignalState> {
 
         @Override
         public void setWifiIndicators(boolean enabled, IconState statusIcon, IconState qsIcon,
-                boolean activityIn, boolean activityOut, String description) {
+                                      boolean activityIn, boolean activityOut, String description) {
             if (DEBUG) Log.d(TAG, "onWifiSignalChanged enabled=" + enabled);
             mInfo.enabled = enabled;
             mInfo.connected = qsIcon.visible;
@@ -244,7 +245,9 @@ public class WifiTile extends QSTile<QSTile.SignalState> {
             mInfo.wifiSignalContentDescription = qsIcon.contentDescription;
             refreshState(mInfo);
         }
-    };
+    }
+
+    ;
 
     private final class WifiDetailAdapter implements DetailAdapter,
             AccessPointController.AccessPointCallback, AdapterView.OnItemClickListener {
@@ -360,5 +363,7 @@ public class WifiTile extends QSTile<QSTile.SignalState> {
             }
             showDetail(false);
         }
-    };
+    }
+
+    ;
 }
