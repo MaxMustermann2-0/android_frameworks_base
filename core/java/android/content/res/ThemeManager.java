@@ -15,17 +15,17 @@
  */
 package android.content.res;
 
+import android.content.ContentResolver;
 import android.content.Context;
-import android.content.pm.ThemeUtils;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.RemoteException;
+import android.provider.Settings;
 import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -41,16 +41,6 @@ public class ThemeManager {
 
     private Set<ThemeChangeListener> mChangeListeners =
             new HashSet<ThemeChangeListener>();
-
-    private Set<ThemeProcessingListener> mProcessingListeners =
-            new HashSet<ThemeProcessingListener>();
-
-    public ThemeManager(Context context, IThemeService service) {
-        mContext = context;
-        mService = service;
-        mHandler = new Handler(Looper.getMainLooper());
-    }
-
     private final IThemeChangeListener mThemeChangeListener = new IThemeChangeListener.Stub() {
         @Override
         public void onProgress(final int progress) throws RemoteException {
@@ -104,36 +94,42 @@ public class ThemeManager {
             });
         }
     };
-
+    private Set<ThemeProcessingListener> mProcessingListeners =
+            new HashSet<ThemeProcessingListener>();
     private final IThemeProcessingListener mThemeProcessingListener =
             new IThemeProcessingListener.Stub() {
-        @Override
-        public void onFinishedProcessing(final String pkgName) throws RemoteException {
-            mHandler.post(new Runnable() {
                 @Override
-                public void run() {
-                    synchronized (mProcessingListeners) {
-                        List<ThemeProcessingListener> listenersToRemove = new ArrayList
-                                <ThemeProcessingListener>();
-                        for (ThemeProcessingListener listener : mProcessingListeners) {
-                            try {
-                                listener.onFinishedProcessing(pkgName);
-                            } catch (Throwable e) {
-                                Log.w(TAG, "Unable to update theme change progress", e);
-                                listenersToRemove.add(listener);
+                public void onFinishedProcessing(final String pkgName) throws RemoteException {
+                    mHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            synchronized (mProcessingListeners) {
+                                List<ThemeProcessingListener> listenersToRemove = new ArrayList
+                                        <ThemeProcessingListener>();
+                                for (ThemeProcessingListener listener : mProcessingListeners) {
+                                    try {
+                                        listener.onFinishedProcessing(pkgName);
+                                    } catch (Throwable e) {
+                                        Log.w(TAG, "Unable to update theme change progress", e);
+                                        listenersToRemove.add(listener);
+                                    }
+                                }
+                                if (listenersToRemove.size() > 0) {
+                                    for (ThemeProcessingListener listener : listenersToRemove) {
+                                        mProcessingListeners.remove(listener);
+                                    }
+                                }
                             }
                         }
-                        if (listenersToRemove.size() > 0) {
-                            for (ThemeProcessingListener listener : listenersToRemove) {
-                                mProcessingListeners.remove(listener);
-                            }
-                        }
-                    }
+                    });
                 }
-            });
-        }
-    };
+            };
 
+    public ThemeManager(Context context, IThemeService service) {
+        mContext = context;
+        mService = service;
+        mHandler = new Handler(Looper.getMainLooper());
+    }
 
     public void addClient(ThemeChangeListener listener) {
         synchronized (mChangeListeners) {
@@ -178,6 +174,7 @@ public class ThemeManager {
 
     /**
      * Register a ThemeProcessingListener to be notified when a theme is done being processed.
+     *
      * @param listener ThemeChangeListener to register
      */
     public void registerProcessingListener(ThemeProcessingListener listener) {
@@ -198,6 +195,7 @@ public class ThemeManager {
 
     /**
      * Unregister a ThemeChangeListener.
+     *
      * @param listener ThemeChangeListener to unregister
      */
     public void unregisterProcessingListener(ThemeChangeListener listener) {
@@ -226,7 +224,7 @@ public class ThemeManager {
     }
 
     public void requestThemeChange(String pkgName, List<String> components,
-            boolean removePerAppThemes) {
+                                   boolean removePerAppThemes) {
         Map<String, String> componentMap = new HashMap<String, String>(components.size());
         for (String component : components) {
             componentMap.put(component, pkgName);
@@ -250,6 +248,19 @@ public class ThemeManager {
     public void requestThemeChange(ThemeChangeRequest request, boolean removePerAppThemes) {
         try {
             mService.requestThemeChange(request, removePerAppThemes);
+            ContentResolver contentResolver = mContext.getContentResolver();
+            Settings.System.putString(contentResolver, "theme_current_overlay",
+                    request.getOverlayThemePackageName());
+            Settings.System.putString(contentResolver, "theme_current_icons",
+                    request.getIconsThemePackageName());
+            Settings.System.putString(contentResolver, "theme_current_status",
+                    request.getStatusBarThemePackageName());
+            Settings.System.putString(contentResolver, "theme_current_nav",
+                    request.getNavBarThemePackageName());
+            Settings.System.putString(contentResolver, "theme_current_wallpaper",
+                    request.getWallpaperThemePackageName());
+            Settings.System.putString(contentResolver, "theme_current_lockscreen",
+                    request.getLockWallpaperThemePackageName());
         } catch (RemoteException e) {
             logThemeServiceException(e);
         }
@@ -306,6 +317,7 @@ public class ThemeManager {
 
     public interface ThemeChangeListener {
         void onProgress(int progress);
+
         void onFinish(boolean isSuccess);
     }
 
