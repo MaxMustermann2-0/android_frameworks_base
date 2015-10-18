@@ -39,7 +39,7 @@ public class SystemUIApplication extends Application {
     /**
      * The classes of the stuff to start.
      */
-    private final Class<?>[] SERVICES = new Class[] {
+    private final Class<?>[] SERVICES = new Class[]{
             com.android.systemui.tuner.TunerService.class,
             com.android.systemui.keyguard.KeyguardViewMediator.class,
             com.android.systemui.recents.Recents.class,
@@ -49,15 +49,16 @@ public class SystemUIApplication extends Application {
             com.android.systemui.power.PowerUI.class,
             com.android.systemui.media.RingtonePlayer.class,
             com.android.systemui.keyboard.KeyboardUI.class,
+            com.android.systemui.nightmode.NightModeUI.class
     };
 
     /**
      * Hold a reference on the stuff we start.
      */
     private final SystemUI[] mServices = new SystemUI[SERVICES.length];
+    private final Map<Class<?>, Object> mComponents = new HashMap<Class<?>, Object>();
     private boolean mServicesStarted;
     private boolean mBootCompleted;
-    private final Map<Class<?>, Object> mComponents = new HashMap<Class<?>, Object>();
 
     @Override
     public void onCreate() {
@@ -91,7 +92,7 @@ public class SystemUIApplication extends Application {
      * Makes sure that all the SystemUI services are running. If they are already running, this is a
      * no-op. This is needed to conditinally start all the services, as we only need to have it in
      * the main process.
-     *
+     * <p/>
      * <p>This method must only be called from the main thread.</p>
      */
     public void startServicesIfNeeded() {
@@ -110,11 +111,11 @@ public class SystemUIApplication extends Application {
 
         Log.v(TAG, "Starting SystemUI services.");
         final int N = SERVICES.length;
-        for (int i=0; i<N; i++) {
+        for (int i = 0; i < N; i++) {
             Class<?> cl = SERVICES[i];
             if (DEBUG) Log.d(TAG, "loading: " + cl);
             try {
-                mServices[i] = (SystemUI)cl.newInstance();
+                mServices[i] = (SystemUI) cl.newInstance();
             } catch (IllegalAccessException ex) {
                 throw new RuntimeException(ex);
             } catch (InstantiationException ex) {

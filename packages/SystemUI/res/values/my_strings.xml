@@ -1,0 +1,5 @@
+<resources>
+	<string name="quick_settings_display_rotation_label">Display rotation</string>
+	<string name="nightmode_enabled">Nightmode is enabled</string>
+	<string name="nightmode_settings">Tap here to open nightmode settigs</string>
+</resources>
