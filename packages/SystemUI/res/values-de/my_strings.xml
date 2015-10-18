@@ -2,4 +2,5 @@
 	<string name="quick_settings_display_rotation_label">Bildschirmausrichtung</string>
 	<string name="nightmode_enabled">Nachtmodus ist aktiviert</string>
 	<string name="nightmode_settings">Hier tippen um Einstellungen zu öffnen</string>
+	<string name="qs_nightmode_label">Nachtmodus</string>
 </resources>
