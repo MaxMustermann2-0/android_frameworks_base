@@ -15,7 +15,6 @@ import android.content.res.ThemeManager;
 import android.media.AudioManager;
 import android.os.Handler;
 import android.provider.Settings;
-import android.util.Log;
 
 /**
  * Created by mm20 on 18.10.15.
@@ -169,11 +168,11 @@ public class NightModeUI extends SystemUI {
 
         ThemeChangeRequest.Builder builder = new ThemeChangeRequest.Builder();
         if (nightStyle != null) builder.setOverlay(nightStyle);
-        if (nightStatus != null) builder.setOverlay(nightStatus);
-        if (nightNav != null) builder.setOverlay(nightNav);
-        if (nightIcons != null) builder.setOverlay(nightIcons);
-        if (nightWall != null) builder.setOverlay(nightWall);
-        if (nightLock != null) builder.setOverlay(nightLock);
+        if (nightStatus != null) builder.setStatusBar(nightStatus);
+        if (nightNav != null) builder.setNavBar(nightNav);
+        if (nightIcons != null) builder.setIcons(nightIcons);
+        if (nightWall != null) builder.setWallpaper(nightWall);
+        if (nightLock != null) builder.setLockWallpaper(nightLock);
         mThemeManager.requestThemeChange(builder.build(), true);
     }
 
@@ -201,11 +200,11 @@ public class NightModeUI extends SystemUI {
 
         ThemeChangeRequest.Builder builder = new ThemeChangeRequest.Builder();
         if (nightStyle != null) builder.setOverlay(newStyle);
-        if (nightStatus != null) builder.setOverlay(newStatus);
-        if (nightNav != null) builder.setOverlay(newNav);
-        if (nightIcons != null) builder.setOverlay(newIcons);
-        if (nightWall != null) builder.setOverlay(newWall);
-        if (nightLock != null) builder.setOverlay(newLock);
+        if (nightStatus != null) builder.setStatusBar(newStatus);
+        if (nightNav != null) builder.setNavBar(newNav);
+        if (nightIcons != null) builder.setIcons(newIcons);
+        if (nightWall != null) builder.setWallpaper(newWall);
+        if (nightLock != null) builder.setLockWallpaper(newLock);
         mThemeManager.requestThemeChange(builder.build(), false);
     }
 
