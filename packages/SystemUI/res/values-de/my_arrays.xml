@@ -1,0 +1,18 @@
+<resources>
+	<string-array name="rotation_detail_list_entries">
+		<item>0 Grad</item>
+		<item>90 Grad</item>
+		<item>180 Grad</item>
+		<item>270 Grad</item>
+	</string-array>
+	
+	<string-array name="qs_nightmode_detail_list">
+		<item>Nacht-Design verwenden</item>
+		<item>Niedrigste Helligkeitsstufe</item>
+		<item>Nachtmodus in Live-Display</item>
+		<item>Keine Unterbrechungen</item>
+		<item>Medien stummschalten</item>
+		<item>Benachrichtigungslicht deaktivieren</item>
+		<item>Akkulicht deaktivieren</item>
+	</string-array>
+</resources>

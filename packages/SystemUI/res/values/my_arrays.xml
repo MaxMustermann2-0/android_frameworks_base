@@ -1,0 +1,18 @@
+<resources>
+	<string-array name="rotation_detail_list_entries">
+		<item>0 degrees</item>
+		<item>90 degrees</item>
+		<item>180 degrees</item>
+		<item>270 degrees</item>
+	</string-array>
+	
+	<string-array name="qs_nightmode_detail_list">
+		<item>Use night theme</item>
+		<item>Lowest brightness level</item>
+		<item>Night mode in live display</item>
+		<item>No interruptions</item>
+		<item>Mute media volume</item>
+		<item>Disable notification light</item>
+		<item>Disable battery light</item>
+	</string-array>
+</resources>
