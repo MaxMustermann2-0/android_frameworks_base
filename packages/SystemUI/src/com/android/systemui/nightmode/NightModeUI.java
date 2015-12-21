@@ -1,9 +1,5 @@
 package com.android.systemui.nightmode;
 
-import com.android.systemui.R;
-import com.android.systemui.SystemUI;
-import com.android.systemui.cm.UserContentObserver;
-
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -16,22 +12,33 @@ import android.media.AudioManager;
 import android.os.Handler;
 import android.provider.Settings;
 
+import com.android.systemui.R;
+import com.android.systemui.SystemUI;
+import com.android.systemui.cm.UserContentObserver;
+import com.android.systemui.statusbar.policy.ZenModeController;
+import com.android.systemui.volume.VolumeComponent;
+
+import cyanogenmod.providers.CMSettings;
+
 /**
  * Created by mm20 on 18.10.15.
  */
 public class NightModeUI extends SystemUI {
+    private static final String TAG = "NightModeUI";
     protected Handler mHandler = new Handler();
     AudioManager mAudioManager;
     ThemeManager mThemeManager;
     private NotificationManager mNotificationManager;
     private Intent mSettingsIntent;
     private ContentResolver mContentResolver;
+    private ZenModeController mZenController;
 
     @Override
     public void start() {
         mSettingsIntent = new Intent("android.settings.NIGHTMODE_SETTINGS");
         mAudioManager = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
         mThemeManager = (ThemeManager) mContext.getSystemService(Context.THEME_SERVICE);
+        mZenController = getComponent(VolumeComponent.class).getZenController();
         mContentResolver = mContext.getContentResolver();
         mNotificationManager = (NotificationManager) mContext.getSystemService(Context.NOTIFICATION_SERVICE);
         SettingsObserver observer = new SettingsObserver(mHandler);
@@ -78,7 +85,7 @@ public class NightModeUI extends SystemUI {
                     Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL);
         }
         if (disableBatteryLight) {
-            setNightModePreference("battery_light_enabled", 0, 1);
+            setCMNightModePreference("battery_light_enabled", 0, 1);
         }
         if (disableNotificationLight) {
             setNightModePreference("notification_light_pulse", 0, 1);
@@ -86,15 +93,15 @@ public class NightModeUI extends SystemUI {
         if (liveDisplayNightMode) {
             int mode = Integer.parseInt(mContext.getResources().getStringArray(
                     com.android.internal.R.array.live_display_values)[3]);
-            setNightModePreference(Settings.System.DISPLAY_TEMPERATURE_MODE, mode, 0);
+            setCMNightModePreference(CMSettings.System.DISPLAY_TEMPERATURE_MODE, mode, 0);
         }
         if (useNightTheme) {
             applyNightTheme();
         }
         if (interruptions != -1) {
-            int currentValue = Settings.Global.getInt(mContentResolver, "zen_mode", 0);
+            int currentValue = mZenController.getZen();
             Settings.System.putInt(mContentResolver, "daymode_zen_mode", currentValue);
-            Settings.Global.putInt(mContentResolver, "zen_mode", interruptions);
+            mZenController.setZen(interruptions, null, TAG);
         }
         if (muteMedia) {
             int currentVolume = mAudioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
@@ -123,20 +130,20 @@ public class NightModeUI extends SystemUI {
                     Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL);
         }
         if (disableBatteryLight) {
-            setDayModePreference("battery_light_enabled", 1);
+            setCMDayModePreference("battery_light_enabled", 1);
         }
         if (disableNotificationLight) {
             setDayModePreference("notification_light_pulse", 1);
         }
         if (liveDisplayNightMode) {
-            setDayModePreference(Settings.System.DISPLAY_TEMPERATURE_MODE, 0);
+            setCMDayModePreference(CMSettings.System.DISPLAY_TEMPERATURE_MODE, 0);
         }
         if (useNightTheme) {
             applyDayTheme();
         }
         if (interruptions != -1) {
             int newValue = Settings.System.getInt(mContentResolver, "daymode_zen_mode", 0);
-            Settings.Global.putInt(mContentResolver, "zen_mode", newValue);
+            mZenController.setZen(newValue, null, TAG);
         }
         if (muteMedia) {
             int newVolume = Settings.System.getInt(mContentResolver, "daymode_media_volume", 0);
@@ -218,6 +225,17 @@ public class NightModeUI extends SystemUI {
     private void setDayModePreference(String key, int defValue) {
         int newValue = Settings.System.getInt(mContentResolver, "daymode_" + key, defValue);
         Settings.System.putInt(mContentResolver, key, newValue);
+    }
+
+    private void setCMNightModePreference(String key, int value, int defValue) {
+        int currentValue = CMSettings.System.getInt(mContentResolver, key, defValue);
+        Settings.System.putInt(mContentResolver, "daymode_" + key, currentValue);
+        CMSettings.System.putInt(mContentResolver, key, value);
+    }
+
+    private void setCMDayModePreference(String key, int defValue) {
+        int newValue = Settings.System.getInt(mContentResolver, "daymode_" + key, defValue);
+        CMSettings.System.putInt(mContentResolver, key, newValue);
     }
 
     class SettingsObserver extends UserContentObserver {
