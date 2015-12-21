@@ -1,10 +1,5 @@
 package com.android.systemui.qs.tiles;
 
-import com.android.internal.logging.MetricsLogger;
-import com.android.systemui.R;
-import com.android.systemui.qs.QSDetailItemsList;
-import com.android.systemui.qs.QSTile;
-
 import android.content.Context;
 import android.content.Intent;
 import android.database.ContentObserver;
@@ -15,6 +10,11 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+
+import com.android.internal.logging.MetricsLogger;
+import com.android.systemui.R;
+import com.android.systemui.qs.QSDetailItemsList;
+import com.android.systemui.qs.QSTile;
 
 import cyanogenmod.app.StatusBarPanelCustomTile;
 
@@ -125,6 +125,8 @@ public class NightModeTile extends QSTile<QSTile.BooleanState> {
                     "nightmode_low_brightness", 0) == 1;
             boolean disableBatteryLight = Settings.System.getInt(mContext.getContentResolver(),
                     "nightmode_disable_battery_light", 0) == 1;
+            boolean ambientDisplay = Settings.System.getInt(mContext.getContentResolver(),
+                    "nightmode_ambient_display", 0) == 1;
             boolean disableNotificationLight = Settings.System.getInt(mContext.getContentResolver(),
                     "nightmode_disable_notification_light", 0) == 1;
             boolean liveDisplayNightMode = Settings.System.getInt(mContext.getContentResolver(),
@@ -139,10 +141,11 @@ public class NightModeTile extends QSTile<QSTile.BooleanState> {
             mItems.getListView().setItemChecked(0, useNightTheme);
             mItems.getListView().setItemChecked(1, lowBrightness);
             mItems.getListView().setItemChecked(2, liveDisplayNightMode);
-            mItems.getListView().setItemChecked(3, interruptions > 0);
-            mItems.getListView().setItemChecked(4, muteMedia);
-            mItems.getListView().setItemChecked(5, disableNotificationLight);
-            mItems.getListView().setItemChecked(6, disableBatteryLight);
+            mItems.getListView().setItemChecked(3, ambientDisplay);
+            mItems.getListView().setItemChecked(4, interruptions > 0);
+            mItems.getListView().setItemChecked(5, muteMedia);
+            mItems.getListView().setItemChecked(6, disableNotificationLight);
+            mItems.getListView().setItemChecked(7, disableBatteryLight);
         }
 
         @Override
@@ -175,19 +178,23 @@ public class NightModeTile extends QSTile<QSTile.BooleanState> {
         @Override
         public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
             Settings.System.putInt(mContext.getContentResolver(),
+                    "nightmode_use_night_theme", mItems.getListView().isItemChecked(0) ? 1 : 0);
+            Settings.System.putInt(mContext.getContentResolver(),
                     "nightmode_low_brightness", mItems.getListView().isItemChecked(1) ? 1 : 0);
-            Settings.System.putInt(mContext.getContentResolver(),
-                    "nightmode_disable_battery_light", mItems.getListView().isItemChecked(6) ? 1 : 0);
-            Settings.System.putInt(mContext.getContentResolver(),
-                    "nightmode_disable_notification_light", mItems.getListView().isItemChecked(5) ? 1 : 0);
             Settings.System.putInt(mContext.getContentResolver(),
                     "nightmode_live_display_night", mItems.getListView().isItemChecked(2) ? 1 : 0);
             Settings.System.putInt(mContext.getContentResolver(),
-                    "nightmode_use_night_theme", mItems.getListView().isItemChecked(0) ? 1 : 0);
+                    "nightmode_ambient_display", mItems.getListView().isItemChecked(3) ? 1 : 0);
             Settings.System.putInt(mContext.getContentResolver(),
-                    "nightmode_interruptions", mItems.getListView().isItemChecked(3) ? 2 : -1);
+                    "nightmode_interruptions", mItems.getListView().isItemChecked(4) ? 2 : -1);
             Settings.System.putInt(mContext.getContentResolver(),
-                    "nightmode_mute_media_sound", mItems.getListView().isItemChecked(4) ? 1 : 0);
+                    "nightmode_mute_media_sound", mItems.getListView().isItemChecked(5) ? 1 : 0);
+            Settings.System.putInt(mContext.getContentResolver(),
+                    "nightmode_disable_notification_light", mItems.getListView().isItemChecked(6) ?
+                            1 : 0);
+            Settings.System.putInt(mContext.getContentResolver(),
+                    "nightmode_disable_battery_light", mItems.getListView().isItemChecked(7) ? 1
+                            : 0);
         }
 
     }

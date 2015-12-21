@@ -70,6 +70,8 @@ public class NightModeUI extends SystemUI {
                 "nightmode_disable_battery_light", 0) == 1;
         boolean disableNotificationLight = Settings.System.getInt(mContentResolver,
                 "nightmode_disable_notification_light", 0) == 1;
+        boolean ambientDisplay = Settings.System.getInt(mContentResolver,
+                "nightmode_ambient_display", 0) == 1;
         boolean liveDisplayNightMode = Settings.System.getInt(mContentResolver,
                 "nightmode_live_display_night", 0) == 1;
         boolean useNightTheme = Settings.System.getInt(mContentResolver,
@@ -98,6 +100,14 @@ public class NightModeUI extends SystemUI {
         if (useNightTheme) {
             applyNightTheme();
         }
+        if (ambientDisplay) {
+            int currentValue = Settings.Secure.getInt(mContentResolver,
+                    Settings.Secure.DOZE_ENABLED, 0);
+            Settings.System.putInt(mContentResolver, "daymode_doze_enabled",
+                    currentValue);
+            Settings.Secure.putInt(mContentResolver, Settings.Secure.DOZE_ENABLED, 0);
+        }
+
         if (interruptions != -1) {
             int currentValue = mZenController.getZen();
             Settings.System.putInt(mContentResolver, "daymode_zen_mode", currentValue);
@@ -117,6 +127,8 @@ public class NightModeUI extends SystemUI {
                 "nightmode_disable_battery_light", 0) == 1;
         boolean disableNotificationLight = Settings.System.getInt(mContentResolver,
                 "nightmode_disable_notification_light", 0) == 1;
+        boolean ambientDisplay = Settings.System.getInt(mContentResolver,
+                "nightmode_ambient_display", 0) == 1;
         boolean liveDisplayNightMode = Settings.System.getInt(mContentResolver,
                 "nightmode_live_display_night", 0) == 1;
         boolean useNightTheme = Settings.System.getInt(mContentResolver,
@@ -140,6 +152,11 @@ public class NightModeUI extends SystemUI {
         }
         if (useNightTheme) {
             applyDayTheme();
+        }
+        if (ambientDisplay) {
+            int newValue = Settings.System.getInt(mContentResolver,
+                    "daymode_doze_enabled", 0);
+            Settings.Secure.putInt(mContentResolver, Settings.Secure.DOZE_ENABLED, newValue);
         }
         if (interruptions != -1) {
             int newValue = Settings.System.getInt(mContentResolver, "daymode_zen_mode", 0);

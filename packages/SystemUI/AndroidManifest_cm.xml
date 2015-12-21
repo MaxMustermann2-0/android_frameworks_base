@@ -29,6 +29,7 @@
     <uses-permission android:name="android.permission.FORCE_STOP_PACKAGES" />
 
     <!-- Sync tile -->
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
     <uses-permission android:name="android.permission.READ_SYNC_SETTINGS" />
     <uses-permission android:name="android.permission.WRITE_SYNC_SETTINGS" />
 

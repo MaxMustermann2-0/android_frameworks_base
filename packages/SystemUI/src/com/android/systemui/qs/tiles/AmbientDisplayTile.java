@@ -16,17 +16,20 @@
 
 package com.android.systemui.qs.tiles;
 
-import android.content.Context;
 import android.content.Intent;
+import android.database.ContentObserver;
+import android.net.Uri;
 import android.provider.Settings;
 import android.provider.Settings.Secure;
 
 import com.android.internal.logging.MetricsLogger;
-import com.android.systemui.qs.SecureSetting;
-import com.android.systemui.qs.QSTile;
 import com.android.systemui.R;
+import com.android.systemui.qs.QSTile;
+import com.android.systemui.qs.SecureSetting;
 
-/** Quick settings tile: Ambient Display **/
+/**
+ * Quick settings tile: Ambient Display
+ **/
 public class AmbientDisplayTile extends QSTile<QSTile.BooleanState> {
 
     private static final Intent DISPLAY_SETTINGS = new Intent("android.settings.DISPLAY_SETTINGS");
@@ -43,6 +46,13 @@ public class AmbientDisplayTile extends QSTile<QSTile.BooleanState> {
             }
         };
     }
+
+    private ContentObserver mObserver = new ContentObserver(mHandler) {
+        @Override
+        public void onChange(boolean selfChange, Uri uri) {
+            refreshState();
+        }
+    };
 
     @Override
     protected BooleanState newTileState() {
@@ -68,18 +78,18 @@ public class AmbientDisplayTile extends QSTile<QSTile.BooleanState> {
 
     @Override
     protected void handleUpdateState(BooleanState state, Object arg) {
-        final int value = arg instanceof Integer ? (Integer)arg : mSetting.getValue();
+        final int value = arg instanceof Integer ? (Integer) arg : mSetting.getValue();
         final boolean enable = value != 0;
         state.value = enable;
         state.visible = true;
         state.label = mContext.getString(R.string.quick_settings_ambient_display_label);
         if (enable) {
             state.icon = ResourceIcon.get(R.drawable.ic_qs_ambientdisplay_on);
-            state.contentDescription =  mContext.getString(
+            state.contentDescription = mContext.getString(
                     R.string.accessibility_quick_settings_ambient_display_on);
         } else {
             state.icon = ResourceIcon.get(R.drawable.ic_qs_ambientdisplay_off);
-            state.contentDescription =  mContext.getString(
+            state.contentDescription = mContext.getString(
                     R.string.accessibility_quick_settings_ambient_display_off);
         }
     }
@@ -102,6 +112,12 @@ public class AmbientDisplayTile extends QSTile<QSTile.BooleanState> {
 
     @Override
     public void setListening(boolean listening) {
-        // Do nothing
+        if (listening) {
+            mContext.getContentResolver().registerContentObserver(
+                    Settings.Secure.getUriFor(Settings.Secure.DOZE_ENABLED),
+                    false, mObserver);
+        } else {
+            mContext.getContentResolver().unregisterContentObserver(mObserver);
+        }
     }
 }
