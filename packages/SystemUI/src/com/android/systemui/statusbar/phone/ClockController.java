@@ -8,10 +8,7 @@ import android.database.ContentObserver;
 import android.graphics.Color;
 import android.os.Handler;
 import android.os.UserHandle;
-import android.provider.Settings;
-import android.util.Log;
 import android.view.View;
-
 import com.android.systemui.R;
 import com.android.systemui.cm.UserContentObserver;
 import com.android.systemui.statusbar.policy.Clock;
@@ -23,10 +20,10 @@ import cyanogenmod.providers.CMSettings;
  */
 public class ClockController {
 
-    public static final int STYLE_HIDE_CLOCK = 0;
-    public static final int STYLE_CLOCK_RIGHT = 1;
-    public static final int STYLE_CLOCK_CENTER = 2;
-    public static final int STYLE_CLOCK_LEFT = 3;
+    public static final int STYLE_HIDE_CLOCK    = 0;
+    public static final int STYLE_CLOCK_RIGHT   = 1;
+    public static final int STYLE_CLOCK_CENTER  = 2;
+    public static final int STYLE_CLOCK_LEFT    = 3;
 
     private final IconMerger mNotificationIcons;
     private final Context mContext;
@@ -36,7 +33,6 @@ public class ClockController {
     private int mClockLocation;
     private int mAmPmStyle;
     private int mIconTint = Color.WHITE;
-    private int mClockColor;
 
     class SettingsObserver extends UserContentObserver {
         SettingsObserver(Handler handler) {
@@ -51,8 +47,6 @@ public class ClockController {
                     CMSettings.System.STATUS_BAR_AM_PM), false, this, UserHandle.USER_ALL);
             resolver.registerContentObserver(CMSettings.System.getUriFor(
                     CMSettings.System.STATUS_BAR_CLOCK), false, this, UserHandle.USER_ALL);
-            resolver.registerContentObserver(Settings.System.getUriFor("status_bar_clock_color"),
-                    false, this, UserHandle.USER_ALL);
             updateSettings();
         }
 
@@ -107,9 +101,9 @@ public class ClockController {
         mActiveClock = getClockForCurrentLocation();
         mActiveClock.setVisibility(View.VISIBLE);
         mActiveClock.setAmPmStyle(mAmPmStyle);
-        setTextColor(mClockColor);
 
         setClockAndDateStatus();
+        setTextColor(mIconTint);
         updateFontSize();
     }
 
@@ -121,15 +115,6 @@ public class ClockController {
         mClockLocation = CMSettings.System.getIntForUser(
                 resolver, CMSettings.System.STATUS_BAR_CLOCK, STYLE_CLOCK_RIGHT,
                 UserHandle.USER_CURRENT);
-        String color = Settings.System.getString(resolver, "status_bar_clock_color");
-        if (color == null) color = "#FFFFFFFF";
-        Log.d("AndroidRuntime", "Color:" + color);
-        try {
-            mClockColor = Color.parseColor(color);
-        } catch (IllegalArgumentException e) {
-            mClockColor = -1;
-        }
-        setTextColor(mClockColor);
         updateActiveClock();
     }
 
