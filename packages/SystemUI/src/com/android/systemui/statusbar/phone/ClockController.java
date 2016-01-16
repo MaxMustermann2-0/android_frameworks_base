@@ -121,9 +121,14 @@ public class ClockController {
         mClockLocation = CMSettings.System.getIntForUser(
                 resolver, CMSettings.System.STATUS_BAR_CLOCK, STYLE_CLOCK_RIGHT,
                 UserHandle.USER_CURRENT);
-        int color = Settings.System.getInt(resolver, "status_bar_clock_color", Color.WHITE);
-        mClockColor = color;
+        String color = Settings.System.getString(resolver, "status_bar_clock_color");
+        if (color == null) color = "#FFFFFFFF";
         Log.d("AndroidRuntime", "Color:" + color);
+        try {
+            mClockColor = Color.parseColor(color);
+        } catch (IllegalArgumentException e) {
+            mClockColor = -1;
+        }
         setTextColor(mClockColor);
         updateActiveClock();
     }
