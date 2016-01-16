@@ -16,6 +16,8 @@ import com.android.systemui.R;
 import com.android.systemui.qs.QSDetailItemsList;
 import com.android.systemui.qs.QSTile;
 
+import org.cyanogenmod.internal.logging.CMMetricsLogger;
+
 import cyanogenmod.app.StatusBarPanelCustomTile;
 
 /**
@@ -73,7 +75,7 @@ public class NightModeTile extends QSTile<QSTile.BooleanState> {
 
     @Override
     public int getMetricsCategory() {
-        return MetricsLogger.DONT_TRACK_ME_BRO;
+        return CMMetricsLogger.ANONYMOUS_STATS;
     }
 
     @Override
@@ -119,7 +121,7 @@ public class NightModeTile extends QSTile<QSTile.BooleanState> {
 
         @Override
         public int getMetricsCategory() {
-            return MetricsLogger.DONT_TRACK_ME_BRO;
+            return CMMetricsLogger.ANONYMOUS_STATS;
         }
 
         private void updateCheckedItems() {

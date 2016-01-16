@@ -34,6 +34,8 @@ import com.android.systemui.qs.QSTile;
 import com.android.systemui.statusbar.policy.RotationLockController;
 import com.android.systemui.statusbar.policy.RotationLockController.RotationLockControllerCallback;
 
+import org.cyanogenmod.internal.logging.CMMetricsLogger;
+
 import cyanogenmod.app.StatusBarPanelCustomTile;
 
 /**
@@ -208,7 +210,7 @@ public class RotationLockTile extends QSTile<QSTile.BooleanState> {
 
         @Override
         public int getMetricsCategory() {
-            return MetricsLogger.DONT_TRACK_ME_BRO;
+            return CMMetricsLogger.ANONYMOUS_STATS;
         }
 
         private void updateCheckedItems() {
