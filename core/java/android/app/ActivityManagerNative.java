@@ -2091,7 +2091,8 @@ public abstract class ActivityManagerNative extends Binder implements IActivityM
             data.enforceInterface(IActivityManager.descriptor);
             CharSequence msg = TextUtils.CHAR_SEQUENCE_CREATOR.createFromParcel(data);
             boolean always = data.readInt() != 0;
-            showBootMessage(msg, always);
+            int progress = data.readInt();
+            showBootMessage(msg, always, progress);
             reply.writeNoException();
             return true;
         }
@@ -5262,12 +5263,13 @@ class ActivityManagerProxy implements IActivityManager
         return res;
     }
 
-    public void showBootMessage(CharSequence msg, boolean always) throws RemoteException {
+    public void showBootMessage(CharSequence msg, boolean always, int progress) throws RemoteException {
         Parcel data = Parcel.obtain();
         Parcel reply = Parcel.obtain();
         data.writeInterfaceToken(IActivityManager.descriptor);
         TextUtils.writeToParcel(msg, data, 0);
         data.writeInt(always ? 1 : 0);
+        data.writeInt(progress);
         mRemote.transact(SHOW_BOOT_MESSAGE_TRANSACTION, data, reply, 0);
         reply.readException();
         data.recycle();

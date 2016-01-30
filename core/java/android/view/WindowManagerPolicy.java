@@ -1168,7 +1168,7 @@ public interface WindowManagerPolicy {
     /**
      * Show boot time message to the user.
      */
-    public void showBootMessage(final CharSequence msg, final boolean always);
+    public void showBootMessage(final CharSequence msg, final boolean always, int progress);
 
     /**
      * Hide the UI for showing boot messages, never to be displayed again.

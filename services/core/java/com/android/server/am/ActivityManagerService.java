@@ -6444,12 +6444,12 @@ public final class ActivityManagerService extends ActivityManagerNative
     }
 
     @Override
-    public void showBootMessage(final CharSequence msg, final boolean always) {
+    public void showBootMessage(final CharSequence msg, final boolean always, final int progress) {
         if (Binder.getCallingUid() != Process.myUid()) {
             // These days only the core system can call this, so apps can't get in
             // the way of what we show about running them.
         }
-        mWindowManager.showBootMessage(msg, always);
+        mWindowManager.showBootMessage(msg, always, progress);
     }
 
     @Override
@@ -11831,7 +11831,8 @@ public final class ActivityManagerService extends ActivityManagerNative
                 doneReceivers.add(comp);
                 lastRi = curRi;
                 CharSequence label = ai.loadLabel(mContext.getPackageManager());
-                showBootMessage(mContext.getString(R.string.android_preparing_apk, label), false);
+                showBootMessage(mContext.getString(R.string.android_preparing_apk, label), false,
+                        -1);
             }
             Slog.i(TAG, "Pre-boot of " + intent.getComponent().toShortString()
                     + " for user " + users[curUser]);
@@ -11955,7 +11956,7 @@ public final class ActivityManagerService extends ActivityManagerNative
                         }
                         showBootMessage(mContext.getText(
                                 R.string.android_upgrading_complete),
-                                false);
+                                false, -1);
                         writeLastDonePreBootReceivers(doneReceivers);
                         systemReady(goingCallback);
                     }
