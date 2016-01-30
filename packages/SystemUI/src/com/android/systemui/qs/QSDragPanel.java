@@ -32,10 +32,12 @@ import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.PointF;
 import android.graphics.PorterDuff;
+import android.graphics.drawable.Animatable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Handler;
 import android.os.UserHandle;
+import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.util.ArrayMap;
@@ -46,7 +48,6 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewTreeObserver;
 import android.widget.BaseExpandableListAdapter;
 import android.widget.EditText;
 import android.widget.ExpandableListView;
@@ -72,21 +73,21 @@ import org.cyanogenmod.internal.logging.CMMetricsLogger;
 import org.cyanogenmod.internal.util.QSUtils;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 
 public class QSDragPanel extends QSPanel implements View.OnDragListener, View.OnLongClickListener {
 
     private static final String TAG = "QSDragPanel";
 
+    public static final boolean DEBUG_TILES = false;
     public static final boolean DEBUG_DRAG = false;
 
     private static final int MAX_ROW_COUNT = 3;
-    private static final int INITIAL_OFFSCREEN_PAGE_LIMIT = 3;
     private static final String BROADCAST_TILE_SPEC_PLACEHOLDER = "broadcast_placeholder";
 
     protected final ArrayList<QSPage> mPages = new ArrayList<>();
@@ -95,6 +96,7 @@ public class QSDragPanel extends QSPanel implements View.OnDragListener, View.On
     protected PagerAdapter mPagerAdapter;
     QSPanelTopView mQsPanelTop;
     CirclePageIndicator mPageIndicator;
+    private int mPageIndicatorHeight;
 
     private TextView mDetailRemoveButton;
     private DragTileRecord mDraggingRecord, mLastDragRecord;
@@ -114,7 +116,6 @@ public class QSDragPanel extends QSPanel implements View.OnDragListener, View.On
 
     List<TileRecord> mCurrentlyAnimating
             = Collections.synchronizedList(new ArrayList<TileRecord>());
-    private Collection<QSTile<?>> mTempTiles = null;
 
     private Point mDisplaySize;
     private int[] mTmpLoc;
@@ -140,26 +141,11 @@ public class QSDragPanel extends QSPanel implements View.OnDragListener, View.On
         mDetail.setVisibility(GONE);
         mDetail.setClickable(true);
 
-        mQsPanelTop = (QSPanelTopView) LayoutInflater.from(mContext).inflate(R.layout.qs_tile_top, this, false);
+        mQsPanelTop = (QSPanelTopView) LayoutInflater.from(mContext).inflate(R.layout.qs_tile_top,
+                this, false);
 
         mBrightnessView = mQsPanelTop.getBrightnessView();
         mFooter = new QSFooter(this, mContext);
-
-        getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-            @Override
-            public void onGlobalLayout() {
-                getViewTreeObserver().removeOnGlobalLayoutListener(this);
-
-                ViewPager.LayoutParams params = new ViewPager.LayoutParams();
-                params.isDecor = true;
-
-                mViewPager.addView(mQsPanelTop, params);
-
-                mQsPanelTop.setOnDragListener(QSDragPanel.this);
-                mPageIndicator.setOnDragListener(QSDragPanel.this);
-                mViewPager.setOnDragListener(QSDragPanel.this);
-            }
-        });
 
         // add target click listener
         mQsPanelTop.getAddTarget().setOnClickListener(
@@ -167,8 +153,8 @@ public class QSDragPanel extends QSPanel implements View.OnDragListener, View.On
                     @Override
                     public void onClick(View v) {
                         TilesListAdapter adapter = new TilesListAdapter(mContext, QSDragPanel.this);
-                        showDetailAdapter(true, adapter,
-                                v.getLocationOnScreen());
+                        showDetailAdapter(true, adapter, v.getLocationOnScreen());
+                        mDetail.bringToFront();
                     }
                 });
         mViewPager = new QSViewPager(getContext());
@@ -176,6 +162,7 @@ public class QSDragPanel extends QSPanel implements View.OnDragListener, View.On
 
         mPageIndicator = new CirclePageIndicator(getContext());
         addView(mDetail);
+        addView(mQsPanelTop);
         addView(mViewPager);
         addView(mPageIndicator);
         addView(mFooter.getView());
@@ -198,7 +185,7 @@ public class QSDragPanel extends QSPanel implements View.OnDragListener, View.On
         mPagerAdapter = new PagerAdapter() {
             @Override
             public Object instantiateItem(ViewGroup container, int position) {
-                if (DEBUG_DRAG) {
+                if (DEBUG_TILES) {
                     Log.d(TAG, "instantiateItem() called with "
                             + "container = [" + container + "], position = [" + position + "]");
                 }
@@ -210,31 +197,21 @@ public class QSDragPanel extends QSPanel implements View.OnDragListener, View.On
                     container.addView(qss, 0);
                     return qss;
                 } else {
-                    QSPage page = new QSPage(container.getContext(),
-                            QSDragPanel.this, mEditing ? position - 1 : position);
-
+                    final int adjustedPosition = mEditing ? position - 1 : position;
+                    QSPage page = mPages.get(adjustedPosition);
                     container.addView(page);
-                    int viewPos = page.getPageIndex();
-                    if (viewPos > mPages.size()) {
-                        mPages.add(page);
-                    } else {
-                        mPages.add(viewPos, page);
-                    }
                     return page;
                 }
             }
 
             @Override
             public void destroyItem(ViewGroup container, int position, Object object) {
-                if (DEBUG_DRAG) {
+                if (DEBUG_TILES) {
                     Log.d(TAG, "destroyItem() called with " + "container = ["
                             + container + "], position = [" + position + "], object = ["
                             + object + "]");
                 }
                 if (object instanceof View) {
-                    if (object instanceof QSPage) {
-                        mPages.remove(object);
-                    }
                     container.removeView((View) object);
                 }
             }
@@ -242,16 +219,34 @@ public class QSDragPanel extends QSPanel implements View.OnDragListener, View.On
             @Override
             public int getItemPosition(Object object) {
                 if (object instanceof QSPage) {
+                    if (mEditing != ((QSPage) object).getAdapterEditingState()) {
+                        // position of item changes when we set change the editing mode,
+                        // sync it and send the new position
+                        ((QSPage) object).setAdapterEditingState(mEditing);
 
-                    final int indexOf = ((QSPage) object).getPageIndex();
-                    if (mEditing) return indexOf + 1;
-                    else return indexOf;
+                        // calculate new position
+                        int indexOf = ((QSPage) object).getPageIndex();
+                        if (mEditing) return indexOf + 1;
+                        else return indexOf;
+
+                    } else if (!mPages.contains(object) && !mDragging) {
+                        // only return none if we aren't dragging (object may be removed from
+                        // the records array temporarily and we might think we have less pages,
+                        // we don't want to prematurely remove this page
+                        return POSITION_NONE;
+                    } else {
+
+                        return POSITION_UNCHANGED;
+                    }
 
                 } else if (object instanceof QSSettings) {
-
-                    if (mEditing) return 0;
-                    else return POSITION_NONE;
-
+                    if (((QSSettings) object).getAdapterEditingState() != mEditing) {
+                        ((QSSettings) object).setAdapterEditingState(mEditing);
+                        if (mEditing) return 0 /* locked at position 0 */;
+                        else return POSITION_NONE;
+                    } else {
+                        return POSITION_UNCHANGED;
+                    }
                 }
                 return super.getItemPosition(object);
             }
@@ -259,6 +254,12 @@ public class QSDragPanel extends QSPanel implements View.OnDragListener, View.On
             @Override
             public int getCount() {
                 final int qsPages = Math.max(getCurrentMaxPageCount(), 1);
+
+                if (mPages != null && qsPages > mPages.size()) {
+                    for(int i = mPages.size(); i < qsPages; i++) {
+                        mPages.add(i, new QSPage(mViewPager.getContext(), QSDragPanel.this, i));
+                    }
+                }
 
                 if (mEditing) return qsPages + 1;
                 return qsPages;
@@ -270,7 +271,6 @@ public class QSDragPanel extends QSPanel implements View.OnDragListener, View.On
             }
         };
         mViewPager.setAdapter(mPagerAdapter);
-        mViewPager.setOffscreenPageLimit(INITIAL_OFFSCREEN_PAGE_LIMIT);
 
         mPageIndicator.setViewPager(mViewPager);
         mPageIndicator.setOnPageChangeListener(new ViewPager.OnPageChangeListener() {
@@ -330,6 +330,13 @@ public class QSDragPanel extends QSPanel implements View.OnDragListener, View.On
         setClipChildren(false);
 
         mSettingsObserver = new SettingsObserver(new Handler());
+
+        mViewPager.setOnDragListener(QSDragPanel.this);
+        mQsPanelTop.setOnDragListener(QSDragPanel.this);
+        mPageIndicator.setOnDragListener(QSDragPanel.this);
+        setOnDragListener(QSDragPanel.this);
+
+        mViewPager.setOverScrollMode(View.OVER_SCROLL_NEVER);
     }
 
     @Override
@@ -353,6 +360,7 @@ public class QSDragPanel extends QSPanel implements View.OnDragListener, View.On
         }
         final int visibility = state.visible ? VISIBLE : GONE;
         setTileVisibility(r.tileView, visibility);
+        setTileEnabled(r.tileView, state.enabled);
         r.tileView.onStateChanged(state);
     }
 
@@ -364,6 +372,7 @@ public class QSDragPanel extends QSPanel implements View.OnDragListener, View.On
             r.tile.setListening(mListening);
         }
         mFooter.setListening(mListening);
+        mQsPanelTop.setListening(mListening);
         if (mListening) {
             refreshAllTiles();
         }
@@ -406,8 +415,10 @@ public class QSDragPanel extends QSPanel implements View.OnDragListener, View.On
         mPageIndicator.setEditing(editing);
         mPagerAdapter.notifyDataSetChanged();
 
+        mViewPager.setOffscreenPageLimit(mEditing ? getCurrentMaxPageCount() + 1 : 1);
+        mPagerAdapter.notifyDataSetChanged();
+
         requestLayout();
-        ensurePagerState();
     }
 
     protected void onStartDrag() {
@@ -427,7 +438,6 @@ public class QSDragPanel extends QSPanel implements View.OnDragListener, View.On
 
         mQsPanelTop.onStopDrag();
         requestLayout();
-        ensurePagerState();
     }
 
     protected View getDropTarget() {
@@ -453,9 +463,6 @@ public class QSDragPanel extends QSPanel implements View.OnDragListener, View.On
 
     protected int getCurrentMaxPageCount() {
         int initialSize = mRecords.size();
-        if (mTempTiles != null) {
-            return getPagesForCount(initialSize + mTempTiles.size());
-        }
         return getPagesForCount(initialSize);
     }
 
@@ -497,102 +504,131 @@ public class QSDragPanel extends QSPanel implements View.OnDragListener, View.On
 
     public void setTiles(final Collection<QSTile<?>> tilesCollection) {
         final List<QSTile<?>> tiles = new ArrayList<>(tilesCollection);
-        if (isLaidOut()) {
-            if (DEBUG_DRAG) {
-                Log.i(TAG, "setTiles() called with " + "tiles = ["
-                        + tiles + "], mTempTiles: " + mTempTiles);
-                if (mTempTiles != null) {
-                    Log.e(TAG, "temp tiles being overridden... : " +
-                            Arrays.toString(mTempTiles.toArray()));
+        if (DEBUG_TILES) {
+            Log.i(TAG, "setTiles() called with " + "tiles = ["
+                    + tiles + "]");
+        }
+
+        int currentViewPagerPage = mViewPager.getCurrentItem();
+
+        if (mLastDragRecord != null && mRecords.indexOf(mLastDragRecord) == -1) {
+            // the last removed record might be stored in mLastDragRecord if we just shifted
+            // re-add it to the list so we'll clean it up below
+            mRecords.add(mLastDragRecord);
+            mLastDragRecord = null;
+        }
+
+        Map<QSTile<?>, DragTileRecord> recordMap = new ArrayMap<>();
+        ListIterator<TileRecord> iterator = mRecords.listIterator(mRecords.size());
+
+        int recordsRemoved = 0;
+        // cleanup current records
+        while (iterator.hasPrevious()) {
+            DragTileRecord dr = (DragTileRecord) iterator.previous();
+
+            if (dr.page >= 0) {
+                // clean up view
+                mPages.get(dr.page).removeView(dr.tileView);
+            }
+
+            if (tiles.contains(dr.tile)) {
+                if (DEBUG_TILES) {
+                    Log.i(TAG, "caching tile: " + dr.tile);
                 }
-            }
-
-            if (mLastDragRecord != null && mRecords.indexOf(mLastDragRecord) == -1) {
-                // the last removed record might be stored in mLastDragRecord if we just shifted
-                // re-add it to the list so we'll clean it up below
-                mRecords.add(mLastDragRecord);
-                mLastDragRecord = null;
-            }
-
-            Map<QSTile<?>, DragTileRecord> recordMap = new ArrayMap<>();
-            Iterator<TileRecord> iterator = mRecords.iterator();
-
-            int recordsRemoved = 0;
-            // cleanup current records
-            while (iterator.hasNext()) {
-                DragTileRecord dr = (DragTileRecord) iterator.next();
-
-                if (tiles.contains(dr.tile)) {
-                    if (DEBUG_DRAG) {
-                        Log.i(TAG, "caching tile: " + dr.tile);
-                    }
-                    recordMap.put(dr.tile, dr);
-                } else {
-                    if (DEBUG_DRAG) {
-                        Log.i(TAG, "removing tile: " + dr.tile);
-                    }
-                    // clean up view
-                    mPages.get(dr.page).removeView(dr.tileView);
-
-                    // remove record
-                    iterator.remove();
-                    recordsRemoved++;
+                recordMap.put(dr.tile, dr);
+            } else {
+                if (DEBUG_TILES) {
+                    Log.i(TAG, "removing tile: " + dr.tile);
                 }
-            }
 
+                // remove record
+                iterator.remove();
+                recordsRemoved++;
 
-            // at this point recordMap should have all retained tiles, no new or old tiles
-            int delta = tiles.size() - recordMap.size() - recordsRemoved;
-            if (DEBUG_DRAG) {
-                Log.i(TAG, "record map delta: " + delta);
-            }
-            mRecords.ensureCapacity(tiles.size());
-            mPagerAdapter.notifyDataSetChanged();
+                if (dr.page >= getCurrentMaxPageCount() - 1) {
+                    final int childCount = mPages.get(dr.page).getChildCount();
 
-            // add new tiles
-            for (int i = 0; i < tiles.size(); i++) {
-                QSTile<?> tile = tiles.get(i);
-                final int tileDestPage = getPagesForCount(i + 1) - 1;
-
-                if (DEBUG_DRAG) {
-                    Log.d(TAG, "tile at : " + i + ": " + tile + " to dest page: " + tileDestPage);
-                }
-                if (!recordMap.containsKey(tile)) {
-                    DragTileRecord record = makeRecord(tile);
-                    record.destinationPage = tileDestPage;
-                    recordMap.put(tile, record);
-                    mRecords.add(i, record);
-                    mPagerAdapter.notifyDataSetChanged();
-
-                    // add the view
-                    mPages.get(record.destinationPage).addView(record.tileView);
-                    record.page = record.destinationPage;
-                    if (DEBUG_DRAG) {
-                        Log.d(TAG, "added new record " + record);
-                    }
-                } else {
-                    DragTileRecord record = recordMap.get(tile);
-                    int indexOf = mRecords.indexOf(record);
-                    if (indexOf != i) {
-                        if (DEBUG_DRAG) {
-                            Log.w(TAG, "moving index of " + record + " from "
-                                    + indexOf + " to " + i);
+                    if (childCount == 0) {
+                        final int currentIndex = mViewPager.getCurrentItem();
+                        if (currentIndex > 0 && currentViewPagerPage == currentIndex) {
+                            // if we are about to remove the page we are currently on, move back
+                            currentViewPagerPage--;
                         }
-                        Collections.swap(mRecords, indexOf, i);
-
-                        record.destinationPage = tileDestPage;
-                        ensureDestinationPage(record);
+                        final int pageIndex = dr.page + (mEditing ? 1 : 0);
+                        mPagerAdapter.startUpdate(mViewPager);
+                        mPagerAdapter.destroyItem(mViewPager, pageIndex, mPages.get(dr.page));
+                        mPagerAdapter.finishUpdate(mViewPager);
+                        mPagerAdapter.notifyDataSetChanged();
                     }
                 }
             }
-            if (isShowingDetail()) {
-                mDetail.bringToFront();
+            dr.page = -1;
+            dr.destinationPage = -1;
+        }
+
+        // at this point recordMap should have all retained tiles, no new or old tiles
+        int delta = tiles.size() - recordMap.size() - recordsRemoved;
+        if (DEBUG_TILES) {
+            Log.i(TAG, "record map delta: " + delta);
+        }
+        mRecords.ensureCapacity(tiles.size());
+
+        mPagerAdapter.notifyDataSetChanged();
+
+        // even though we explicitly destroy old pages, without this call,
+        // the viewpager doesn't seem to want to pick up the fact that we have less pages
+        // and allows "empty" scrolls to the right where there is no page.
+        mViewPager.setAdapter(mPagerAdapter);
+
+        // add new tiles
+        for (int i = 0; i < tiles.size(); i++) {
+            QSTile<?> tile = tiles.get(i);
+            final int tileDestPage = getPagesForCount(i + 1) - 1;
+
+            if (DEBUG_TILES) {
+                Log.d(TAG, "tile at : " + i + ": " + tile + " to dest page: " + tileDestPage);
             }
-        } else if (!isLaidOut()) {
-            if (DEBUG_DRAG) {
-                Log.w(TAG, "setting temporary tiles to layout");
+            DragTileRecord record;
+            if (!recordMap.containsKey(tile)) {
+                if (DEBUG_TILES) {
+                    Log.d(TAG, "tile at: " + i + " not cached, adding it to records");
+                }
+                record = makeRecord(tile);
+                record.destinationPage = tileDestPage;
+                recordMap.put(tile, record);
+                mRecords.add(i, record);
+                mPagerAdapter.notifyDataSetChanged();
+            } else {
+                record = recordMap.get(tile);
+                if (DEBUG_TILES) {
+                    Log.d(TAG, "tile at : " + i + ": cached, restoring: " + record);
+                }
+                int indexOf = mRecords.indexOf(record);
+                if (indexOf != i) {
+                    if (DEBUG_TILES) {
+                        Log.w(TAG, "moving index of " + record + " from "
+                                + indexOf + " to " + i);
+                    }
+                    Collections.swap(mRecords, indexOf, i);
+
+                }
+                record.destinationPage = tileDestPage;
             }
-            mTempTiles = Collections.synchronizedCollection(new ArrayList<QSTile<?>>(tiles));
+            if (record.page == -1) {
+                // add the view
+                mPages.get(record.destinationPage).addView(record.tileView);
+                record.page = record.destinationPage;
+                if (DEBUG_TILES) {
+                    Log.d(TAG, "added view " + record);
+                }
+            }
+        }
+
+        // restore the visible page
+        mViewPager.setCurrentItem(currentViewPagerPage, false);
+
+        if (isShowingDetail()) {
+            mDetail.bringToFront();
         }
         mPagerAdapter.notifyDataSetChanged();
 
@@ -600,18 +636,8 @@ public class QSDragPanel extends QSPanel implements View.OnDragListener, View.On
         requestLayout();
     }
 
-    private void ensureDestinationPage(DragTileRecord record) {
-        if (record.destinationPage != record.page) {
-            if (record.page >= 0) {
-                getPage(record.page).removeView(record.tileView);
-            }
-            getPage(record.destinationPage).addView(record.tileView);
-            record.page = record.destinationPage;
-        }
-    }
-
     private DragTileRecord makeRecord(final QSTile<?> tile) {
-        if (DEBUG_DRAG) {
+        if (DEBUG_TILES) {
             Log.d(TAG, "+++ makeRecord() called with " + "tile = [" + tile + "]");
         }
         final DragTileRecord r = new DragTileRecord();
@@ -688,42 +714,20 @@ public class QSDragPanel extends QSPanel implements View.OnDragListener, View.On
         r.tileView.setVisibility(mEditing ? View.VISIBLE : View.GONE);
         callback.onStateChanged(r.tile.getState());
 
-        if (DEBUG_DRAG) {
+        if (DEBUG_TILES) {
             Log.d(TAG, "--- makeRecord() called with " + "tile = [" + tile + "]");
         }
         return r;
     }
 
-    private void addTile(final QSTile<?> tile) {
+    private void removeDraggingRecord() {
+        // what spec is this tile?
+        String spec = mHost.getSpec(mDraggingRecord.tile);
         if (DEBUG_DRAG) {
-            Log.d(TAG, "+++ addTile() called with " + "tile = [" + tile + "]");
+            Log.w(TAG, "removing tile: " + mDraggingRecord + " with spec: " + spec);
         }
-        DragTileRecord r = makeRecord(tile);
-        mRecords.add(r);
-        mPagerAdapter.notifyDataSetChanged();
-
-        r.destinationPage = getPagesForCount(mRecords.size()) - 1;
-
-        if (DEBUG_DRAG) {
-            Log.d(TAG, "destinationPage: " + r.destinationPage);
-        }
-
-        mPages.get(r.destinationPage).addView(r.tileView);
-        r.page = r.destinationPage;
-        drawTile(r, r.tile.getState());
-
-        ensurePagerState();
-
-        if (DEBUG_DRAG) {
-            Log.d(TAG, "--- addTile() called with " + "tile = [" + tile + "]");
-        }
-    }
-
-    public void ensurePagerState() {
-        if (!isShowingDetail()) {
-            final boolean pagingEnabled = getVisibleTilePageCount() > 1 || mDragging || mEditing;
-            mViewPager.setPagingEnabled(pagingEnabled);
-        }
+        onStopDrag();
+        mHost.remove(spec);
     }
 
     public int getTilesPerPage(boolean firstPage) {
@@ -744,16 +748,13 @@ public class QSDragPanel extends QSPanel implements View.OnDragListener, View.On
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         final int width = MeasureSpec.getSize(widthMeasureSpec);
 
-        if (isLaidOut()) {
-            mQsPanelTop.measure(exactly(width), MeasureSpec.UNSPECIFIED);
-        }
+        mQsPanelTop.measure(exactly(width), MeasureSpec.UNSPECIFIED);
         mViewPager.measure(exactly(width), MeasureSpec.UNSPECIFIED);
-        mPageIndicator.measure(exactly(width), MeasureSpec.UNSPECIFIED);
+        mPageIndicator.measure(exactly(width), atMost(mPageIndicatorHeight));
         mFooter.getView().measure(exactly(width), MeasureSpec.UNSPECIFIED);
 
-        int h = mBrightnessPaddingTop
-                + mViewPager.getMeasuredHeight()
-                + mPageIndicator.getMeasuredHeight();
+        int h = getRowTop(getCurrentMaxRow() + 1) + mPanelPaddingBottom;
+
         if (mFooter.hasFooter()) {
             h += mFooter.getView().getMeasuredHeight();
         }
@@ -802,6 +803,10 @@ public class QSDragPanel extends QSPanel implements View.OnDragListener, View.On
         return MeasureSpec.makeMeasureSpec(size, MeasureSpec.EXACTLY);
     }
 
+    public static int atMost(int size) {
+        return MeasureSpec.makeMeasureSpec(size, MeasureSpec.AT_MOST);
+    }
+
     @Override
     protected void handleShowDetailTile(TileRecord r, boolean show) {
         if (r instanceof DragTileRecord) {
@@ -824,13 +829,14 @@ public class QSDragPanel extends QSPanel implements View.OnDragListener, View.On
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         final int w = getWidth();
 
-        int top = mBrightnessPaddingTop;
+        mQsPanelTop.layout(0, 0, w, mQsPanelTop.getMeasuredHeight());
 
-        mViewPager.layout(0, top, w, top + mViewPager.getMeasuredHeight());
-        top += mViewPager.getMeasuredHeight();
+        int viewPagerBottom = mQsPanelTop.getMeasuredHeight() + mViewPager.getMeasuredHeight();
+        // view pager laid out from top of brightness view to bottom to page through settings
+        mViewPager.layout(0, 0, w, viewPagerBottom);
 
-        // layout page indicator below view pager
-        mPageIndicator.layout(0, top, w, top + mPageIndicator.getMeasuredHeight());
+        // layout page indicator inside viewpager inset
+        mPageIndicator.layout(0, b - mPageIndicatorHeight, w, b);
 
         mDetail.layout(0, 0, w, mDetail.getMeasuredHeight());
 
@@ -840,21 +846,13 @@ public class QSDragPanel extends QSPanel implements View.OnDragListener, View.On
                     footer.getMeasuredWidth(), getMeasuredHeight());
         }
 
-        if (mTempTiles != null) {
-            final Iterator<QSTile<?>> iterator = mTempTiles.iterator();
-            while (iterator.hasNext()) {
-                addTile(iterator.next());
-                iterator.remove();
-            }
-            mTempTiles = null;
-            mPagerAdapter.notifyDataSetChanged();
-            requestLayout();
+        if (!isShowingDetail() && !isClosingDetail()) {
+            mQsPanelTop.bringToFront();
         }
-        ensurePagerState();
     }
 
     protected int getRowTop(int row) {
-        int baseHeight = mBrightnessView.getMeasuredHeight() + mBrightnessPaddingTop;
+        int baseHeight = mQsPanelTop.getMeasuredHeight();
         if (row <= 0) return baseHeight;
         return baseHeight + mLargeCellHeight - mDualTileUnderlap + (row - 1) * mCellHeight;
     }
@@ -955,20 +953,44 @@ public class QSDragPanel extends QSPanel implements View.OnDragListener, View.On
         boolean dragRecordAttached = dragRecordIndex != -1;
         switch (event.getAction()) {
             case DragEvent.ACTION_DRAG_STARTED:
+                if (DEBUG_DRAG) {
+                    Log.v(TAG, "ACTION_DRAG_STARTED on view: " + v);
+                }
+
                 if (originatingTileEvent) {
                     if (DEBUG_DRAG) {
                         Log.v(TAG, "ACTION_DRAG_STARTED on target view.");
                     }
                     mRestored = false;
+                    mQsPanelTop.setDropIcon(R.drawable.ic_qs_tile_delete_disable, R.color.qs_tile_trash_normal_tint);
                 }
-                return true;
+
+                break;
 
             case DragEvent.ACTION_DRAG_ENTERED:
                 if (DEBUG_DRAG) {
-                    Log.v(TAG, "ACTION_DRAG_ENTERED on view with tile: " + targetTile);
+                    if (targetTile != null) {
+                        Log.v(TAG, "ACTION_DRAG_ENTERED on view with tile: " + targetTile);
+                    } else {
+                        Log.v(TAG, "ACTION_DRAG_ENTERED on view: " + v);
+                    }
                 }
                 mLocationHits = 0;
                 mMovedByLocation = false;
+
+                if (v == mQsPanelTop) {
+                    int icon, color;
+                    if (mDraggingRecord.tile instanceof EditTile) {
+                        // use a different warning, user can't erase this one
+                        icon = R.drawable.ic_qs_tile_delete_disable_avd;
+                        color = R.color.qs_tile_trash_delete_tint_warning;
+                    } else {
+                        icon = R.drawable.ic_qs_tile_delete_disable;
+                        color = R.color.qs_tile_trash_delete_tint;
+                    }
+
+                    mQsPanelTop.setDropIcon(icon, color);
+                }
 
                 if (!originatingTileEvent && v != getDropTarget() && targetTile != null) {
                     if (DEBUG_DRAG) {
@@ -986,7 +1008,7 @@ public class QSDragPanel extends QSPanel implements View.OnDragListener, View.On
                     }
                 }
 
-                return true;
+                break;
             case DragEvent.ACTION_DRAG_ENDED:
                 if (DEBUG_DRAG) {
                     Log.v(TAG, "ACTION_DRAG_ENDED on view: " + v + "(tile: "
@@ -997,7 +1019,7 @@ public class QSDragPanel extends QSPanel implements View.OnDragListener, View.On
                     restoreDraggingTilePosition(v);
                 }
 
-                return true;
+                break;
 
             case DragEvent.ACTION_DROP:
                 if (DEBUG_DRAG) {
@@ -1014,21 +1036,15 @@ public class QSDragPanel extends QSPanel implements View.OnDragListener, View.On
                     if (mDraggingRecord.tile instanceof EditTile) {
                         mQsPanelTop.toast(R.string.quick_settings_cannot_delete_edit_tile);
                         restoreDraggingTilePosition(v);
-                        return true;
+                        break;
                     } else {
                         mRestored = true;
-                        // what spec is this tile?
-                        String spec = mHost.getSpec(mDraggingRecord.tile);
-                        if (DEBUG_DRAG) {
-                            Log.w(TAG, "removing tile: " + mDraggingRecord + " with spec: " + spec);
-                        }
-                        onStopDrag();
-                        mHost.remove(spec);
+                        removeDraggingRecord();
                     }
                 } else {
                     restoreDraggingTilePosition(v);
                 }
-                return true;
+                break;
 
             case DragEvent.ACTION_DRAG_EXITED:
                 if (DEBUG_DRAG) {
@@ -1038,6 +1054,11 @@ public class QSDragPanel extends QSPanel implements View.OnDragListener, View.On
                         Log.v(TAG, "ACTION_DRAG_EXITED on view: " + v);
                     }
                 }
+
+                if (v == mQsPanelTop) {
+                    mQsPanelTop.setDropIcon(R.drawable.ic_qs_tile_delete_disable, R.color.qs_tile_trash_normal_tint);
+                }
+
                 if (originatingTileEvent
                         && mCurrentlyAnimating.isEmpty()
                         && !mViewPager.isFakeDragging()
@@ -1053,7 +1074,7 @@ public class QSDragPanel extends QSPanel implements View.OnDragListener, View.On
 
                     // move tiles back
                     shiftTiles(mDraggingRecord, false);
-                    return true;
+                    break;
                 }
                 // fall through so exit events can trigger a left shift
             case DragEvent.ACTION_DRAG_LOCATION:
@@ -1115,17 +1136,20 @@ public class QSDragPanel extends QSPanel implements View.OnDragListener, View.On
                         shiftTiles((DragTileRecord) mRecords.get(mLastRightShift), false);
                         mMovedByLocation = true;
                     }
+
                 } else {
                     if (DEBUG_DRAG) {
                         Log.i(TAG, "ignoring location event because things are animating, size: "
                                 + mCurrentlyAnimating.size());
                     }
                 }
-                return true;
+                break;
+
             default:
                 Log.w(TAG, "unhandled event");
+                return false;
         }
-        return false;
+        return true;
     }
 
     private boolean isDropTargetEvent(DragEvent event, View v) {
@@ -1707,11 +1731,12 @@ public class QSDragPanel extends QSPanel implements View.OnDragListener, View.On
         mPanelPaddingBottom = res.getDimensionPixelSize(R.dimen.qs_panel_padding_bottom);
         mDualTileUnderlap = res.getDimensionPixelSize(R.dimen.qs_dual_tile_padding_vertical);
         mBrightnessPaddingTop = res.getDimensionPixelSize(R.dimen.qs_brightness_padding_top);
+        mPageIndicatorHeight = res.getDimensionPixelSize(R.dimen.qs_panel_page_indicator_height);
+        if (mColumns != columns) {
+            mColumns = columns;
+            if (isLaidOut()) postInvalidate();
+        }
         if (isLaidOut()) {
-            if (mColumns != columns) {
-                mColumns = columns;
-                postInvalidate();
-            }
             for (TileRecord r : mRecords) {
                 r.tile.clearState();
             }
@@ -1724,6 +1749,12 @@ public class QSDragPanel extends QSPanel implements View.OnDragListener, View.On
 
     public boolean isAnimating(TileRecord t) {
         return mCurrentlyAnimating.contains(t);
+    }
+
+    public void cleanup() {
+        if (mSettingsObserver != null) {
+            mSettingsObserver.unobserve();
+        }
     }
 
     public static class TilesListAdapter extends BaseExpandableListAdapter
@@ -1767,6 +1798,9 @@ public class QSDragPanel extends QSPanel implements View.OnDragListener, View.On
 
             // add broadcast tile
             mPackageTileMap.get(PACKAGE_ANDROID).add(BROADCAST_TILE_SPEC_PLACEHOLDER);
+
+            final List<String> systemTiles = mPackageTileMap.get(PACKAGE_ANDROID);
+            Collections.sort(systemTiles);
         }
 
         private String getCustomTilePackage(String spec) {
@@ -2056,6 +2090,10 @@ public class QSDragPanel extends QSPanel implements View.OnDragListener, View.On
         return mRecords.indexOf(mDraggingRecord) >= 0;
     }
 
+    public boolean isOnSettingsPage() {
+        return mEditing && mViewPager.getCurrentItem() == 0;
+    }
+
     public void goToSettingsPage() {
         if (mEditing) {
             mViewPager.setCurrentItem(0, true);
@@ -2093,6 +2131,7 @@ public class QSDragPanel extends QSPanel implements View.OnDragListener, View.On
                     CMSettings.Secure.QS_USE_MAIN_TILES, 1, currentUserId) == 1;
             if (firstRowLarge != mFirstRowLarge) {
                 mFirstRowLarge = firstRowLarge;
+                setTiles(new ArrayList<QSTile<?>>()); // clear out states
                 setTiles(mHost.getTiles());
             }
         }

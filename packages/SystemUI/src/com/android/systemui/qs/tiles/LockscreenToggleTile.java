@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 The CyanogenMod Project
+ * Copyright (C) 2015-2016 The CyanogenMod Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,69 +16,64 @@
 
 package com.android.systemui.qs.tiles;
 
-import android.app.admin.DevicePolicyManager;
-import android.content.BroadcastReceiver;
-import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
-import android.content.SharedPreferences;
-
-import android.widget.Toast;
+import android.os.UserHandle;
 import com.android.systemui.R;
 import com.android.systemui.SystemUIApplication;
 import com.android.systemui.keyguard.KeyguardViewMediator;
 import com.android.systemui.qs.QSTile;
 import com.android.systemui.statusbar.policy.KeyguardMonitor;
+import cyanogenmod.providers.CMSettings;
 import org.cyanogenmod.internal.logging.CMMetricsLogger;
 
 public class LockscreenToggleTile extends QSTile<QSTile.BooleanState>
         implements KeyguardMonitor.Callback {
-
-    public static final String ACTION_APPLY_LOCKSCREEN_STATE =
-            "com.android.systemui.qs.tiles.action.APPLY_LOCKSCREEN_STATE";
-
-    private static final String KEY_ENABLED = "lockscreen_enabled";
 
     private static final Intent LOCK_SCREEN_SETTINGS =
             new Intent("android.settings.LOCK_SCREEN_SETTINGS");
 
     private KeyguardViewMediator mKeyguardViewMediator;
     private KeyguardMonitor mKeyguard;
-    private boolean mPersistedState;
-    private boolean mKeyguardBound;
-    private SharedPreferences mPrefs;
+    private boolean mListening;
 
-    private BroadcastReceiver mReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if (mKeyguardViewMediator != null) {
-                mKeyguardBound = mKeyguardViewMediator.isKeyguardBound();
-                applyLockscreenState();
-                refreshState();
-            }
-        }
-    };
+    private KeyguardViewMediator.LockscreenEnabledSettingsObserver mSettingsObserver;
 
     public LockscreenToggleTile(Host host) {
         super(host);
-        mPrefs = mContext.getSharedPreferences("quicksettings", Context.MODE_PRIVATE);
 
         mKeyguard = host.getKeyguardMonitor();
         mKeyguardViewMediator =
                 ((SystemUIApplication)
                         mContext.getApplicationContext()).getComponent(KeyguardViewMediator.class);
-        mPersistedState = getPersistedState();
-        mKeyguardBound = mKeyguardViewMediator.isKeyguardBound();
-        applyLockscreenState();
 
-        mContext.registerReceiver(mReceiver, new IntentFilter(ACTION_APPLY_LOCKSCREEN_STATE));
+        mSettingsObserver = new KeyguardViewMediator.LockscreenEnabledSettingsObserver(mContext,
+                mUiHandler) {
+
+            @Override
+            public void update() {
+                boolean newState = CMSettings.Secure.getIntForUser(
+                        mContext.getContentResolver(),
+                        CMSettings.Secure.LOCKSCREEN_INTERNALLY_ENABLED,
+                        getPersistedDefaultOldSetting() ? 1 : 0,
+                        UserHandle.USER_CURRENT) != 0;
+                refreshState(newState);
+            }
+        };
+
     }
 
     @Override
     public void setListening(boolean listening) {
+        if (mListening == listening) {
+            return;
+        }
+        mListening = listening;
         if (listening) {
+            mSettingsObserver.observe();
             mKeyguard.addCallback(this);
+            refreshState();
         } else {
+            mSettingsObserver.unobserve();
             mKeyguard.removeCallback(this);
         }
     }
@@ -90,9 +85,9 @@ public class LockscreenToggleTile extends QSTile<QSTile.BooleanState>
 
     @Override
     protected void handleClick() {
-        setPersistedState(!mPersistedState);
-        applyLockscreenState();
-        refreshState();
+        final boolean newState = !getState().value;
+        setPersistedState(newState);
+        refreshState(newState);
     }
 
     @Override
@@ -103,12 +98,12 @@ public class LockscreenToggleTile extends QSTile<QSTile.BooleanState>
     @Override
     protected void handleUpdateState(BooleanState state, Object arg) {
         final boolean lockscreenEnforced = mKeyguardViewMediator.lockscreenEnforcedByDevicePolicy();
-        final boolean lockscreenEnabled = lockscreenEnforced
-                || mPersistedState
-                || mKeyguardViewMediator.getKeyguardEnabledInternal();
+        final boolean lockscreenEnabled = lockscreenEnforced ||
+                arg != null ? (Boolean) arg : mKeyguardViewMediator.getKeyguardEnabledInternal();
 
         state.value = lockscreenEnabled;
-        state.visible = !mKeyguard.isShowing() || !mKeyguard.isSecure();
+        state.visible = mKeyguardViewMediator.isKeyguardBound();
+        state.enabled = !mKeyguard.isShowing() || !mKeyguard.isSecure();
         state.label = mContext.getString(lockscreenEnforced
                 ? R.string.quick_settings_lockscreen_label_enforced
                 : R.string.quick_settings_lockscreen_label);
@@ -140,31 +135,13 @@ public class LockscreenToggleTile extends QSTile<QSTile.BooleanState>
     }
 
     @Override
-    protected void handleDestroy() {
-        super.handleDestroy();
-        mContext.unregisterReceiver(mReceiver);
-    }
-
-    @Override
     public void onKeyguardChanged() {
         refreshState();
     }
 
-    private void applyLockscreenState() {
-        if (!mKeyguardBound) {
-            // do nothing yet
-            return;
-        }
-
-        mKeyguardViewMediator.setKeyguardEnabledInternal(mPersistedState);
-    }
-
-    private boolean getPersistedState() {
-        return mPrefs.getBoolean(KEY_ENABLED, true);
-    }
-
     private void setPersistedState(boolean enabled) {
-        mPrefs.edit().putBoolean(KEY_ENABLED, enabled).apply();
-        mPersistedState = enabled;
+        CMSettings.Secure.putIntForUser(mContext.getContentResolver(),
+                CMSettings.Secure.LOCKSCREEN_INTERNALLY_ENABLED,
+                enabled ? 1 : 0, UserHandle.USER_CURRENT);
     }
 }

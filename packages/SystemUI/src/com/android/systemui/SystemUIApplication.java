@@ -22,6 +22,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Configuration;
+import android.content.res.ThemeConfig;
 import android.os.SystemProperties;
 import android.util.Log;
 
@@ -56,9 +57,10 @@ public class SystemUIApplication extends Application {
      * Hold a reference on the stuff we start.
      */
     private final SystemUI[] mServices = new SystemUI[SERVICES.length];
-    private final Map<Class<?>, Object> mComponents = new HashMap<Class<?>, Object>();
     private boolean mServicesStarted;
     private boolean mBootCompleted;
+    private final Map<Class<?>, Object> mComponents = new HashMap<Class<?>, Object>();
+    private Configuration mConfig;
 
     @Override
     public void onCreate() {
@@ -86,13 +88,14 @@ public class SystemUIApplication extends Application {
                 }
             }
         }, filter);
+        mConfig = new Configuration(getResources().getConfiguration());
     }
 
     /**
      * Makes sure that all the SystemUI services are running. If they are already running, this is a
      * no-op. This is needed to conditinally start all the services, as we only need to have it in
      * the main process.
-     * <p/>
+     *
      * <p>This method must only be called from the main thread.</p>
      */
     public void startServicesIfNeeded() {
@@ -135,6 +138,12 @@ public class SystemUIApplication extends Application {
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
+        if (isThemeChange(mConfig, newConfig)) {
+            // theme resource changed so recreate styles and attributes
+            recreateTheme();
+        }
+
+        mConfig.setTo(newConfig);
         if (mServicesStarted) {
             int len = mServices.length;
             for (int i = 0; i < len; i++) {
@@ -150,5 +159,12 @@ public class SystemUIApplication extends Application {
 
     public SystemUI[] getServices() {
         return mServices;
+    }
+
+    private static boolean isThemeChange(Configuration oldConfig, Configuration newConfig) {
+        final ThemeConfig oldThemeConfig = oldConfig != null ? oldConfig.themeConfig : null;
+        final ThemeConfig newThemeConfig = newConfig != null ? newConfig.themeConfig : null;
+
+        return newThemeConfig != null && !newThemeConfig.equals(oldThemeConfig);
     }
 }
