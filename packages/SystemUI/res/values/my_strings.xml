@@ -1,7 +1,7 @@
 <resources>
 	<string name="quick_settings_display_rotation_label">Display rotation</string>
 	<string name="nightmode_enabled">Night mode is enabled</string>
-	<string name="nightmode_settings">Tap here to open night mode settigs</string>
+	<string name="nightmode_settings">Tap here to open night mode settings</string>
 	<string name="qs_nightmode_label">Night mode</string>
 	<string name="status_bar_su">Super user</string>
 </resources>

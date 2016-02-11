@@ -56,8 +56,8 @@ import com.android.systemui.qs.tiles.IntentTile;
 import com.android.systemui.qs.tiles.LiveDisplayTile;
 import com.android.systemui.qs.tiles.LocationTile;
 import com.android.systemui.qs.tiles.LockscreenToggleTile;
-import com.android.systemui.qs.tiles.NightModeTile;
 import com.android.systemui.qs.tiles.NfcTile;
+import com.android.systemui.qs.tiles.NightModeTile;
 import com.android.systemui.qs.tiles.PerfProfileTile;
 import com.android.systemui.qs.tiles.ProfilesTile;
 import com.android.systemui.qs.tiles.RotationLockTile;
@@ -122,12 +122,12 @@ public class QSTileHost implements QSTile.Host, Tunable {
     private Callback mCallback;
 
     public QSTileHost(Context context, PhoneStatusBar statusBar,
-            BluetoothController bluetooth, LocationController location,
-            RotationLockController rotation, NetworkController network,
-            ZenModeController zen, HotspotController hotspot,
-            CastController cast, FlashlightController flashlight,
-            UserSwitcherController userSwitcher, KeyguardMonitor keyguard,
-            SecurityController security) {
+                      BluetoothController bluetooth, LocationController location,
+                      RotationLockController rotation, NetworkController network,
+                      ZenModeController zen, HotspotController hotspot,
+                      CastController cast, FlashlightController flashlight,
+                      UserSwitcherController userSwitcher, KeyguardMonitor keyguard,
+                      SecurityController security) {
         mContext = context;
         mStatusBar = statusBar;
         mBluetooth = bluetooth;
@@ -288,7 +288,7 @@ public class QSTileHost implements QSTile.Host, Tunable {
     public SecurityController getSecurityController() {
         return mSecurity;
     }
-    
+
     @Override
     public void onTuningChanged(String key, String newValue) {
         if (!CMSettings.Secure.QS_TILES.equals(key)) {
@@ -415,9 +415,14 @@ public class QSTileHost implements QSTile.Host, Tunable {
                 TextUtils.join(",", tiles), ActivityManager.getCurrentUser());
     }
 
+    public void initiateReset() {
+        if (mCallback != null) {
+            mCallback.resetTiles();
+        }
+    }
+
     @Override
     public void resetTiles() {
-        setEditing(false);
         CMSettings.Secure.putStringForUser(getContext().getContentResolver(),
                 CMSettings.Secure.QS_TILES, "default", ActivityManager.getCurrentUser());
     }
@@ -451,6 +456,8 @@ public class QSTileHost implements QSTile.Host, Tunable {
         else if (spec.equals("lockscreen")) return R.string.quick_settings_lockscreen_label;
         else if (spec.equals("ambient_display")) return R.string.quick_settings_ambient_display_label;
         else if (spec.equals("live_display")) return R.string.live_display_title;
+        else if (spec.equals("heads_up")) return R.string.quick_settings_heads_up_label;
+        else if (spec.equals("battery_saver")) return R.string.quick_settings_battery_saver_label;
         else if (spec.equals("night_mode")) return R.string.qs_nightmode_label;
         return 0;
     }
@@ -480,6 +487,9 @@ public class QSTileHost implements QSTile.Host, Tunable {
         else if (spec.equals("lockscreen")) return R.drawable.ic_qs_lock_screen_on;
         else if (spec.equals("ambient_display")) return R.drawable.ic_qs_ambientdisplay_on;
         else if (spec.equals("live_display")) return R.drawable.ic_livedisplay_auto;
+        else if (spec.equals("heads_up")) return R.drawable.ic_qs_heads_up_on;
+        else if (spec.equals("battery_saver")) return R.drawable.ic_qs_battery_saver_on;
+        else if (spec.equals("night_mode")) return R.drawable.ic_qs_nightmode_on;
         return 0;
     }
 

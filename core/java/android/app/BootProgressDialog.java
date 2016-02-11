@@ -62,23 +62,25 @@ public class BootProgressDialog extends ProgressDialog {
     @Override
     public void setProgress(int value) {
         mProgressVal = value;
-        if (mProgressVal == -1) {
-            mProgress.setIndeterminate(true);
-        } else {
-            mProgress.setIndeterminate(false);
-            mProgress.setProgress(mProgressVal);
+        if (mProgress != null) {
+            if (mProgressVal == -1) {
+                mProgress.setIndeterminate(true);
+            } else {
+                mProgress.setIndeterminate(false);
+                mProgress.setProgress(mProgressVal);
+            }
         }
     }
 
     @Override
     public void setMessage(CharSequence message) {
         mMessage = message;
-        mMessageView.setText(message);
+        if (mMessageView != null) mMessageView.setText(message);
     }
 
     @Override
     public void setTitle(CharSequence title) {
         mTitle = title.toString();
-        mTitleView.setText(mTitle);
+        if (mTitleView != null) mTitleView.setText(mTitle);
     }
 }
