@@ -11,6 +11,9 @@ import android.widget.TextView;
 
 import com.android.internal.R;
 
+/**
+* @hide
+*/
 public class BootProgressDialog extends ProgressDialog {
 
     private String mTitle;

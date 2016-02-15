@@ -22,6 +22,7 @@ import android.os.Build;
 /**
  * Helper for accessing features in {@link android.os.AsyncTask}
  * introduced after API level 4 in a backwards compatible fashion.
+ * @hide
  */
 public class AsyncTaskCompat {
 

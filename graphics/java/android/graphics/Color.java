@@ -408,6 +408,7 @@ public class Color {
      * @param color The color to get brightness.
      * @return The brightness of the color in range of 0 to 255, where 0 is dark and 255 bright.
      * 255 if the color is transparent
+     * @hide
      */
 
     public static int getBrightness(int color) {
