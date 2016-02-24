@@ -387,6 +387,7 @@ public class StatusBarKeyguardViewManager {
 
     private void executeAfterKeyguardGoneAction() {
         if (mAfterKeyguardGoneAction != null) {
+            dismiss();
             mAfterKeyguardGoneAction.onDismiss();
             mAfterKeyguardGoneAction = null;
         }
@@ -563,6 +564,10 @@ public class StatusBarKeyguardViewManager {
     public void animateCollapsePanels(float speedUpFactor) {
         mPhoneStatusBar.animateCollapsePanels(CommandQueue.FLAG_EXCLUDE_NONE, true /* force */,
                 false /* delayed */, speedUpFactor);
+        if (mStatusBarWindowManager.keyguardExternalViewHasFocus()) {
+            mStatusBarWindowManager.setKeyguardExternalViewFocus(false);
+            dismiss(false);
+        }
     }
 
     /**
