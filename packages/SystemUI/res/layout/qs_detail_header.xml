@@ -35,7 +35,9 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:clickable="false"
-        android:textAppearance="@style/TextAppearance.QS.DetailHeader" />
+        android:textAppearance="@style/TextAppearance.QS.DetailHeader"
+        android:thumbTint="#fff"
+        android:trackTint="#fff" />
 
     <TextView
         android:id="@+id/done"
@@ -46,6 +48,7 @@
         android:minWidth="88dp"
         android:paddingRight="12dp"
         android:textAppearance="@style/TextAppearance.QS.DetailButton"
+        android:textColor="#fff"
         android:clickable="false"
         android:focusable="false" />
 </com.android.keyguard.AlphaOptimizedLinearLayout>

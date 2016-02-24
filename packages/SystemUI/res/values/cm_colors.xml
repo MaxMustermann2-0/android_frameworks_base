@@ -69,10 +69,10 @@
     <color name="tuner_icon_tint">#4dffffff</color>
 
     <!-- QS Settings Text Colors -->
-    <color name="qs_tile_reset_to_default_text_color">@android:color/white</color>
-    <color name="qs_title_text_color">#80cbc4</color>
-    <color name="qs_edit_header_instruction_text_color">@android:color/white</color>
-    <color name="qs_row_text_color">@android:color/white</color>
+    <color name="qs_tile_reset_to_default_text_color">@color/system_secondary_color</color>
+    <color name="qs_title_text_color">@color/system_accent_color</color>
+    <color name="qs_edit_header_instruction_text_color">@color/system_secondary_color</color>
+    <color name="qs_row_text_color">@color/system_secondary_color</color>
 
     <!-- natural color of the trash can -->
     <color name="qs_tile_trash_normal_tint">@android:color/transparent</color>
@@ -107,9 +107,9 @@
     <color name="header_debug_info_text_color">#00A040</color>
 
     <!-- QS Detailed View Text and Icon Colors -->
-    <color name="qs_detailed_default_text_color">@android:color/white</color>
+    <color name="qs_detailed_default_text_color">@color/system_secondary_color</color>
     <color name="qs_detailed_expansion_indicator_color">@color/qs_title_text_color</color>
-    <color name="qs_detailed_title_text_color">@color/qs_title_text_color</color>
+    <color name="qs_detailed_title_text_color">#ffffff</color>
     <color name="qs_detailed_icon_tint_color">@color/qs_title_text_color</color>
 
     <!-- Quick tile text color when the tile is disabled -->

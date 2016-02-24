@@ -4,4 +4,5 @@
 	<string name="nightmode_settings">Tap here to open night mode settings</string>
 	<string name="qs_nightmode_label">Night mode</string>
 	<string name="status_bar_su">Super user</string>
+	<string name="quick_settings_color">Color scheme</string>
 </resources>

@@ -20,5 +20,5 @@ Copyright (C) 2015 The Android Open Source Project
         android:viewportHeight="24.0">
     <path
         android:pathData="M12.000000,8.000000l-6.000000,6.000000 1.400000,1.400000 4.600000,-4.599999 4.600000,4.599999 1.400000,-1.400000z"
-        android:fillColor="#FFFFFFFF"/>
+        android:fillColor="@color/system_secondary_color"/>
 </vector>

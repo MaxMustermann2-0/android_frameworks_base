@@ -26,7 +26,7 @@
         <objectAnimator
             android:duration="350"
             android:propertyName="alpha"
-            android:valueFrom="0.5"
+            android:valueFrom="1"
             android:valueTo="1"
             android:interpolator="@android:interpolator/fast_out_slow_in" />
     </set>

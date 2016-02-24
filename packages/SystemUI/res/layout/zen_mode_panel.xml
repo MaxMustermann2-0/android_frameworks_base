@@ -77,7 +77,7 @@
             android:clickable="true"
             android:focusable="true"
             android:text="@string/zen_priority_customize_button"
-            android:textAppearance="@style/TextAppearance.QS.DetailButton.White" />
+            android:textAppearance="@style/TextAppearance.QS.DetailButton" />
 
         <View
             android:layout_width="0dp"

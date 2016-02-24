@@ -21,5 +21,5 @@ Copyright (C) 2014 The Android Open Source Project
 
     <path
         android:pathData="M24.0,4.0C15.0,4.0 6.7,7.0 0.0,12.0l24.0,32.0l24.0,-32.0C41.3,7.0 33.0,4.0 24.0,4.0z"
-        android:fillColor="@color/qs_detail_empty" />
+        android:fillColor="@color/system_secondary_color" />
 </vector>

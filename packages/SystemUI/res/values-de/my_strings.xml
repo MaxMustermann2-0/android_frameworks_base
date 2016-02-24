@@ -3,4 +3,5 @@
 	<string name="nightmode_enabled">Nachtmodus ist aktiviert</string>
 	<string name="nightmode_settings">Hier tippen um Einstellungen zu öffnen</string>
 	<string name="qs_nightmode_label">Nachtmodus</string>
+	<string name="quick_settings_color">Farbschema</string>
 </resources>

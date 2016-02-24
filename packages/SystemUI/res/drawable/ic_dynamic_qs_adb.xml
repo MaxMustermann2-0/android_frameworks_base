@@ -21,7 +21,7 @@ Copyright (C) 2015 The CyanogenMod Project
     android:viewportHeight="48">
 
     <path
-        android:fillColor="#FFFFFF"
+        android:fillColor="@color/system_secondary_color"
         android:pathData="M 37.727707,9.975208 L 40.285946,3.7258741 C 40.541238,3.1009409
 40.243401,2.3882503 39.618464,2.1329586 38.993529,1.8776669 38.28084,2.1755027
 38.025548,2.8004407 L 35.374234,9.275815 C 32.449014,8.605674 28.718028,8.350381
@@ -47,7 +47,7 @@ c -3.084777,0 -5.5845131,-2.499733 -5.5845131,-5.584512 0,-3.084778
 5.584512,2.499733 5.584512,5.584511 -0.0027,3.084779 -2.502394,5.584512
 -5.584512,5.584512 z" />
     <path
-        android:fillColor="#FFFFFF"
+        android:fillColor="@color/system_secondary_color"
         android:strokeWidth="16"
         android:strokeLineJoin="round"
         android:strokeLineCap="round"

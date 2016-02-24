@@ -43,6 +43,8 @@
         android:paddingEnd="20dp"
         android:paddingTop="16dp"
         android:paddingBottom="16dp"
+        android:progressTint="@color/system_secondary_color"
+        android:progressBackgroundTint="#50000000"
         android:thumb="@drawable/ic_brightness_thumb"
         android:splitTrack="false"
         />

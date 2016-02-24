@@ -25,6 +25,87 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical">
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+            <LinearLayout
+                android:id="@+id/qs_color_scheme"
+                android:layout_marginEnd="0dp"
+                style="@style/SettingRow">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="24dp"
+                    android:gravity="center_vertical"
+                    android:layout_gravity="center_vertical"
+                    android:layout_weight="1"
+                    android:id="@+id/qs_color"
+                    android:textColor="@color/qs_tile_reset_to_default_text_color"
+                    android:text="@string/quick_settings_color"
+                    android:contentDescription="@null"/>
+
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true">
+                <ImageView
+                    android:id="@+id/color_scheme_bluegrey"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_weight="1"
+                    android:layout_margin="5dp"
+                    android:visibility="invisible"
+                    android:src="@drawable/color_scheme_bluegrey" />
+                <ImageView
+                    android:id="@+id/color_scheme_red"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_weight="1"
+                    android:layout_margin="5dp"
+                    android:visibility="invisible"
+                    android:src="@drawable/color_scheme_red" />
+                <ImageView
+                    android:id="@+id/color_scheme_blue"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_weight="1"
+                    android:layout_margin="5dp"
+                    android:visibility="invisible"
+                    android:src="@drawable/color_scheme_blue" />
+                <ImageView
+                    android:id="@+id/color_scheme_teal"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_weight="1"
+                    android:layout_margin="5dp"
+                    android:visibility="invisible"
+                    android:src="@drawable/color_scheme_teal" />
+                <ImageView
+                    android:id="@+id/color_scheme_cyan"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_weight="1"
+                    android:layout_margin="5dp"
+                    android:visibility="invisible"
+                    android:src="@drawable/color_scheme_cyan" />
+                <ImageView
+                    android:id="@+id/color_scheme_orange"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_weight="1"
+                    android:layout_margin="5dp"
+                    android:visibility="invisible"
+                    android:src="@drawable/color_scheme_orange" />
+                <ImageView
+                    android:id="@+id/color_scheme_current"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_weight="1"
+                    android:layout_margin="5dp"
+                    android:src="@drawable/color_scheme_current" />
+            </LinearLayout>
+        </RelativeLayout>
 
         <TextView
                 android:layout_width="match_parent"
@@ -72,6 +153,7 @@
                 style="@style/SettingRow"
                 android:title="@string/quick_settings_title_advanced_location"
                 android:key="qs_location_advanced"
+                android:visibility="gone"
                 systemui:defaultValue="0"
                 systemui:table="cm_secure"/>
 

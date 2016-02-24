@@ -1,0 +1,5 @@
+<resources>
+    <color name="settigs_color_primary">#00BCD4</color>
+    <color name="settigs_color_secondary">#00ACC1</color>
+    <color name="settigs_color_accent">#616161</color>
+</resources>

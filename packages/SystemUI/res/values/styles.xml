@@ -127,19 +127,22 @@
     <style name="TextAppearance.QS.DetailHeader">
         <item name="android:textSize">@dimen/qs_detail_header_text_size</item>
         <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textColor">#ffffff</item>
     </style>
 
     <style name="TextAppearance.QS.DetailItemPrimary">
         <item name="android:textSize">@dimen/qs_detail_item_primary_text_size</item>
+        <item name="android:textColor">@color/system_secondary_color</item>
     </style>
 
     <style name="TextAppearance.QS.DetailItemSecondary">
         <item name="android:textSize">@dimen/qs_detail_item_secondary_text_size</item>
-        <item name="android:textColor">@color/system_accent_color</item>
+        <item name="android:textColor">@color/system_secondary_color</item>
     </style>
 
     <style name="TextAppearance.QS.Introduction">
         <item name="android:textSize">14sp</item>
+        <item name="android:textColor">#ffffff</item>
     </style>
 
     <style name="TextAppearance.QS.Warning">
@@ -215,7 +218,7 @@
     <style name="Animation.StatusBar">
     </style>
 
-    <style name="systemui_theme" parent="@android:style/Theme.DeviceDefault">
+    <style name="systemui_theme" parent="@android:style/Theme.DeviceDefault.Light">
         <item name="android:colorPrimary">@color/system_primary_color</item>
         <item name="android:colorControlActivated">@color/system_accent_color</item>
     </style>
@@ -288,12 +291,13 @@
     <style name="TextAppearance.Volume.ZenSummary">
         <item name="android:textSize">14sp</item>
         <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textColor">@color/system_secondary_color</item>
     </style>
 
     <style name="TextAppearance.Volume.ZenDetail">
         <item name="android:textSize">14sp</item>
         <item name="android:fontFamily">sans-serif</item>
-        <item name="android:textColor">#ffb0b3c5</item>
+        <item name="android:textColor">@color/system_secondary_color</item>
     </style>
 
     <style name="VolumeButtons" parent="@android:style/Widget.Material.Button.Borderless">

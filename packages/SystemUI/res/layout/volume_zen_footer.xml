@@ -61,6 +61,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="1dp"
+                android:alpha="0.5"
                 android:textDirection="locale"
                 android:textAppearance="@style/TextAppearance.Volume.ZenDetail" />
 
