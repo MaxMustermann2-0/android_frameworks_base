@@ -6,8 +6,6 @@ import android.app.PendingIntent;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.res.ThemeChangeRequest;
-import android.content.res.ThemeManager;
 import android.media.AudioManager;
 import android.os.Handler;
 import android.provider.Settings;
@@ -19,6 +17,8 @@ import com.android.systemui.statusbar.policy.ZenModeController;
 import com.android.systemui.volume.VolumeComponent;
 
 import cyanogenmod.providers.CMSettings;
+import cyanogenmod.themes.ThemeChangeRequest;
+import cyanogenmod.themes.ThemeManager;
 
 /**
  * Created by mm20 on 18.10.15.
@@ -37,7 +37,7 @@ public class NightModeUI extends SystemUI {
     public void start() {
         mSettingsIntent = new Intent("android.settings.NIGHTMODE_SETTINGS");
         mAudioManager = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
-        mThemeManager = (ThemeManager) mContext.getSystemService(Context.THEME_SERVICE);
+        mThemeManager = ThemeManager.getInstance(mContext);
         mZenController = getComponent(VolumeComponent.class).getZenController();
         mContentResolver = mContext.getContentResolver();
         mNotificationManager = (NotificationManager) mContext.getSystemService(Context.NOTIFICATION_SERVICE);

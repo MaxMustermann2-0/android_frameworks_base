@@ -21,8 +21,6 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.res.ThemeChangeRequest;
-import android.content.res.ThemeManager;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
@@ -46,6 +44,9 @@ import android.widget.ScrollView;
 import com.android.systemui.R;
 import com.android.systemui.statusbar.phone.QSTileHost;
 import com.android.systemui.statusbar.phone.SystemUIDialog;
+
+import cyanogenmod.themes.ThemeChangeRequest;
+import cyanogenmod.themes.ThemeManager;
 
 public class QSSettings extends ScrollView implements View.OnClickListener {
     private static final String RESULT_RECEIVER_EXTRA = "result_receiver";
@@ -98,6 +99,27 @@ public class QSSettings extends ScrollView implements View.OnClickListener {
                 }
             }
         });
+        findViewById(R.id.qs_color_scheme).setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                openColorScheme();
+            }
+        });
+        mBluegrey = findViewById(R.id.color_scheme_bluegrey);
+        mRed = findViewById(R.id.color_scheme_red);
+        mBlue = findViewById(R.id.color_scheme_blue);
+        mTeal = findViewById(R.id.color_scheme_teal);
+        mOrange = findViewById(R.id.color_scheme_orange);
+        mCyan = findViewById(R.id.color_scheme_cyan);
+        mCurrent = findViewById(R.id.color_scheme_current);
+
+        mBluegrey.setOnClickListener(this);
+        mRed.setOnClickListener(this);
+        mBlue.setOnClickListener(this);
+        mTeal.setOnClickListener(this);
+        mOrange.setOnClickListener(this);
+        mCyan.setOnClickListener(this);
+        mCurrent.setOnClickListener(this);
     }
 
     public Parcelable getResultReceiverForSending() {
@@ -127,27 +149,6 @@ public class QSSettings extends ScrollView implements View.OnClickListener {
         i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         i.putExtra(RESULT_RECEIVER_EXTRA, getResultReceiverForSending());
         getContext().startActivity(i);
-        findViewById(R.id.qs_color_scheme).setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                openColorScheme();
-            }
-        });
-        mBluegrey = findViewById(R.id.color_scheme_bluegrey);
-        mRed = findViewById(R.id.color_scheme_red);
-        mBlue = findViewById(R.id.color_scheme_blue);
-        mTeal = findViewById(R.id.color_scheme_teal);
-        mOrange = findViewById(R.id.color_scheme_orange);
-        mCyan = findViewById(R.id.color_scheme_cyan);
-        mCurrent = findViewById(R.id.color_scheme_current);
-
-        mBluegrey.setOnClickListener(this);
-        mRed.setOnClickListener(this);
-        mBlue.setOnClickListener(this);
-        mTeal.setOnClickListener(this);
-        mOrange.setOnClickListener(this);
-        mCyan.setOnClickListener(this);
-        mCurrent.setOnClickListener(this);
     }
 
     private void initiateTileReset() {
@@ -188,8 +189,7 @@ public class QSSettings extends ScrollView implements View.OnClickListener {
             return;
         }
         ThemeChangeRequest.Builder builder = new ThemeChangeRequest.Builder();
-        ThemeManager themeManager = (ThemeManager) getContext()
-                .getSystemService(Context.THEME_SERVICE);
+        ThemeManager themeManager = ThemeManager.getInstance(getContext());
         String themePkg = "system";
         if(view == mRed) themePkg = "de.mm20.sysuired";
         if(view == mBlue) themePkg = "de.mm20.sysuiblue";
