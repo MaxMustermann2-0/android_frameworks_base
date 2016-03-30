@@ -15,12 +15,21 @@
  */
 package com.android.systemui.qs;
 
+import android.Manifest;
 import android.annotation.Nullable;
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.res.ThemeChangeRequest;
 import android.content.res.ThemeManager;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Parcel;
+import android.os.Parcelable;
+import android.os.ResultReceiver;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -31,6 +40,7 @@ import android.view.animation.ScaleAnimation;
 import android.view.animation.TranslateXAnimation;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.CompoundButton;
 import android.widget.ScrollView;
 
 import com.android.systemui.R;
@@ -38,7 +48,10 @@ import com.android.systemui.statusbar.phone.QSTileHost;
 import com.android.systemui.statusbar.phone.SystemUIDialog;
 
 public class QSSettings extends ScrollView implements View.OnClickListener {
-
+    private static final String RESULT_RECEIVER_EXTRA = "result_receiver";
+    private static final String LOCK_CLOCK_PACKAGENAME = "com.cyanogenmod.lockclock";
+    private static final String LOCK_CLOCK_PERM_CLASS = LOCK_CLOCK_PACKAGENAME
+            + ".weather.PermissionRequestActivity";
     private QSTileHost mHost;
 
     private View mBluegrey;
@@ -50,6 +63,8 @@ public class QSSettings extends ScrollView implements View.OnClickListener {
     private View mCurrent;
 
     private boolean mAdapterEditingState;
+    private QSBooleanSettingRow mShowWeather;
+    private ResultReceiver mResultReceiver;
     private boolean mColorSchemeOpen;
 
     public QSSettings(Context context, @Nullable AttributeSet attrs) {
@@ -67,6 +82,51 @@ public class QSSettings extends ScrollView implements View.OnClickListener {
                 initiateTileReset();
             }
         });
+
+        mShowWeather = (QSBooleanSettingRow) findViewById(R.id.show_weather);
+        mShowWeather.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked) {
+                    PackageManager packageManager = getContext().getPackageManager();
+                    if (packageManager.checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION,
+                            LOCK_CLOCK_PACKAGENAME) != PackageManager.PERMISSION_GRANTED) {
+                        mShowWeather.setChecked(false);
+                        requestPermission();
+                        mHost.collapsePanels();
+                    }
+                }
+            }
+        });
+    }
+
+    public Parcelable getResultReceiverForSending() {
+        if (mResultReceiver == null) {
+            mResultReceiver = new ResultReceiver(new Handler()) {
+                @Override
+                protected void onReceiveResult(int resultCode, Bundle resultData) {
+                    super.onReceiveResult(resultCode, resultData);
+                    if (resultCode == Activity.RESULT_OK) {
+                        mShowWeather.setChecked(true);
+                    }
+                    mResultReceiver = null;
+                }
+            };
+        }
+        Parcel parcel = Parcel.obtain();
+        mResultReceiver.writeToParcel(parcel, 0);
+        parcel.setDataPosition(0);
+        ResultReceiver receiverForSending = ResultReceiver.CREATOR.createFromParcel(parcel);
+        parcel.recycle();
+        return receiverForSending;
+    }
+
+    private void requestPermission() {
+        Intent i = new Intent();
+        i.setClassName(LOCK_CLOCK_PACKAGENAME, LOCK_CLOCK_PERM_CLASS);
+        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        i.putExtra(RESULT_RECEIVER_EXTRA, getResultReceiverForSending());
+        getContext().startActivity(i);
         findViewById(R.id.qs_color_scheme).setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
