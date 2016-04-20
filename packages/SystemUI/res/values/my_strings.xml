@@ -1,8 +1,26 @@
 <resources>
-	<string name="quick_settings_display_rotation_label">Display rotation</string>
-	<string name="nightmode_enabled">Night mode is enabled</string>
-	<string name="nightmode_settings">Tap here to open night mode settings</string>
-	<string name="qs_nightmode_label">Night mode</string>
-	<string name="status_bar_su">Super user</string>
-	<string name="quick_settings_color">Color scheme</string>
+    <string name="quick_settings_display_rotation_label">Display rotation</string>
+    <string name="nightmode_enabled">Night mode is enabled</string>
+    <string name="nightmode_settings">Tap here to open night mode settings</string>
+    <string name="qs_nightmode_label">Night mode</string>
+    <string name="status_bar_su">Super user</string>
+    <string name="quick_settings_color">Color scheme</string>
+    <string name="recent_apps">Recent apps</string>
+    <string name="search">Search…</string>
+    <string name="type_application">Application</string>
+    <string name="type_contact">Contact</string>
+    <string name="type_album">Album</string>
+    <string name="type_track">Song</string>
+    <string name="type_event">Event</string>
+    <string name="type_file">File</string>
+    <string name="type_folder">Folder</string>
+    <string name="confirm_deletion">%s will be deleted. Continue?</string>
+    <string name="failed">Failed!</string>
+    <string name="no_application"><![CDATA[No application found to open this kind of data!]]></string>
+    <string name="recents_pin_application">Pin</string>
+    <string name="recents_wipe_data">Wipe data</string>
+    <string name="recents_uninstall">Uninstall</string>
+    <string name="recents_multiwindow">Multi window</string>
+    <string name="recents_app_info">App info</string>
+    <string name="recents_kill">Kill</string>
 </resources>

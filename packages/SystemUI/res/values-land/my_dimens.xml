@@ -1,0 +1,4 @@
+<resources>
+    <dimen name="recents_thumbnail_size">120dp</dimen>
+    <dimen name="recents_thumbnail_margin">2dp</dimen>
+</resources>

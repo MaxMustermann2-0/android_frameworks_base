@@ -19,74 +19,94 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:orientation="horizontal">
 
-        <EditText
-            android:id="@+id/dash_search"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_margin="12dp"
+        <RelativeLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="4">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical">
+
+                <EditText
+                    android:id="@+id/dash_search"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_margin="12dp"
+                    android:layout_weight="1"
+                    android:background="@null"
+                    android:hint="@string/search"
+                    android:textColor="#fff"
+                    android:textColorHint="#fff"
+                    android:textSize="@dimen/dash_caption_size" />
+
+                <GridView
+                    android:id="@+id/dash_content_grid"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="6"
+                    android:fastScrollEnabled="true"
+                    android:requiresFadingEdge="vertical" />
+            </LinearLayout>
+
+            <ProgressBar
+                android:id="@+id/dash_search_progress"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_alignParentEnd="true"
+                android:layout_alignParentTop="true"
+                android:layout_margin="12dp"
+                android:indeterminateTint="#fff"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/dash_deleter_bg"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_alignParentTop="true"
+                android:alpha="0.0"
+                android:src="@drawable/recents_deleter_bg" />
+
+            <ImageView
+                android:id="@+id/dash_deleter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_alignParentTop="true"
+                android:layout_margin="12dp"
+                android:alpha="0.0"
+                android:src="@drawable/ic_qs_tile_delete"
+                android:tint="#fff" />
+        </RelativeLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
             android:layout_weight="1"
-            android:background="@null"
-            android:hint="@string/search"
-            android:textColor="#fff"
-            android:textColorHint="#fff"
-            android:textSize="@dimen/dash_caption_size" />
+            android:orientation="vertical">
 
-        <GridView
-            android:id="@+id/dash_content_grid"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="10"
-            android:fastScrollEnabled="true"
-            android:requiresFadingEdge="vertical" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_margin="12dp    "
-            android:layout_weight="1"
-            android:text="@string/recent_apps"
-            android:textColor="#fff"
-            android:textSize="@dimen/dash_caption_size" />
-        <!-- Recents View -->
-        <com.android.systemui.recents.views.RecentTasksView
-            android:id="@+id/recent_tasks"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="4"
-            android:focusable="true" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_margin="12dp"
+                android:layout_weight="1"
+                android:text="@string/recent_apps"
+                android:textColor="#fff"
+                android:textSize="@dimen/dash_caption_size" />
+            <!-- Recents View -->
+            <com.android.systemui.recents.views.VerticalRecentTasksView
+                android:id="@+id/recent_tasks"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="6"
+                android:focusable="true" />
+        </LinearLayout>
     </LinearLayout>
 
-    <ProgressBar
-        android:id="@+id/dash_search_progress"
-        android:layout_width="32dp"
-        android:layout_height="32dp"
-        android:layout_alignParentEnd="true"
-        android:layout_alignParentTop="true"
-        android:layout_margin="12dp"
-        android:indeterminateTint="#fff"
-        android:visibility="gone" />
-
-    <ImageView
-        android:id="@+id/dash_deleter_bg"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentEnd="true"
-        android:layout_alignParentTop="true"
-        android:alpha="0.0"
-        android:src="@drawable/recents_deleter_bg" />
-
-    <ImageView
-        android:id="@+id/dash_deleter"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentEnd="true"
-        android:layout_alignParentTop="true"
-        android:layout_margin="12dp"
-        android:alpha="0.0"
-        android:src="@drawable/ic_qs_tile_delete"
-        android:tint="#fff" />
 
     <View
         android:id="@+id/recents_actions_overlay"

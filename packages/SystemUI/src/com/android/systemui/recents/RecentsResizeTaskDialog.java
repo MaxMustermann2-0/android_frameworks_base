@@ -24,7 +24,6 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.graphics.Rect;
 import android.os.Bundle;
-import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
@@ -32,10 +31,8 @@ import com.android.systemui.R;
 import com.android.systemui.recents.misc.SystemServicesProxy;
 import com.android.systemui.recents.model.RecentsTaskLoader;
 import com.android.systemui.recents.model.Task;
-import com.android.systemui.recents.RecentsActivity;
+import com.android.systemui.recents.views.RecentTasksView;
 import com.android.systemui.recents.views.RecentsView;
-
-import java.util.ArrayList;
 
 /**
  * A helper for the dialogs that show when task debugging is on.
@@ -71,7 +68,7 @@ public class RecentsResizeTaskDialog extends DialogFragment {
     private FragmentManager mFragmentManager;
     private View mResizeTaskDialogContent;
     private RecentsActivity mRecentsActivity;
-    private RecentsView mRecentsView;
+    private RecentTasksView mRecentTasksView;
     private SystemServicesProxy mSsp;
     private Rect[] mBounds = {new Rect(), new Rect(), new Rect(), new Rect()};
     private Task[] mTasks = {null, null, null, null};
@@ -83,9 +80,9 @@ public class RecentsResizeTaskDialog extends DialogFragment {
     }
 
     /** Shows the resize-task dialog. */
-    void showResizeTaskDialog(Task mainTask, RecentsView rv) {
+    void showResizeTaskDialog(Task mainTask, RecentTasksView rv) {
         mTasks[0] = mainTask;
-        mRecentsView = rv;
+        mRecentTasksView = rv;
 
         show(mFragmentManager, TAG);
     }
@@ -202,7 +199,7 @@ public class RecentsResizeTaskDialog extends DialogFragment {
 
         // Get the other tasks.
         for (int i = 1; i <= additionalTasks && mTasks[i - 1] != null; ++i) {
-            mTasks[i] = mRecentsView.getNextTaskOrTopTask(mTasks[i - 1]);
+            mTasks[i] = mRecentTasksView.getNextTaskOrTopTask(mTasks[i - 1]);
             // Do stop if we circled back to the first item.
             if (mTasks[i] == mTasks[0]) {
                 mTasks[i] = null;
@@ -224,7 +221,7 @@ public class RecentsResizeTaskDialog extends DialogFragment {
         // the focus ends on the selected one.
         for (int i = additionalTasks; i >= 0; --i) {
             if (mTasks[i] != null) {
-                mRecentsView.launchTask(mTasks[i]);
+                mRecentTasksView.launchTask(mTasks[i]);
             }
         }
     }
