@@ -54,7 +54,6 @@ import com.android.systemui.qs.tiles.FlashlightTile;
 import com.android.systemui.qs.tiles.HeadsUpTile;
 import com.android.systemui.qs.tiles.HotspotTile;
 import com.android.systemui.qs.tiles.IntentTile;
-import com.android.systemui.qs.tiles.LiveDisplayTile;
 import com.android.systemui.qs.tiles.LocationTile;
 import com.android.systemui.qs.tiles.LockscreenToggleTile;
 import com.android.systemui.qs.tiles.NfcTile;
@@ -370,7 +369,6 @@ public class QSTileHost implements QSTile.Host, Tunable {
         else if (tileSpec.equals("performance")) return new PerfProfileTile(this);
         else if (tileSpec.equals("lockscreen")) return  new LockscreenToggleTile(this);
         else if (tileSpec.equals("ambient_display")) return new AmbientDisplayTile(this);
-        else if (tileSpec.equals("live_display")) return new LiveDisplayTile(this);
         else if (tileSpec.equals("heads_up")) return new HeadsUpTile(this);
         else if (tileSpec.equals("battery_saver")) return new BatterySaverTile(this);
         else if (tileSpec.equals("caffeine")) return new CaffeineTile(this);
@@ -403,11 +401,10 @@ public class QSTileHost implements QSTile.Host, Tunable {
                 tiles.add(tile);
             }
         }
-        // ensure edit tile is present
-        if (tiles.size() < TILES_PER_PAGE && !tiles.contains("edit")) {
+        // ensure edit tile is present, default placement should be handled in the default
+        // tile list.
+        if (!tiles.contains("edit")) {
             tiles.add("edit");
-        } else if (tiles.size() > TILES_PER_PAGE && !tiles.contains("edit")) {
-            tiles.add((TILES_PER_PAGE - 1), "edit");
         }
         return tiles;
     }
@@ -465,7 +462,6 @@ public class QSTileHost implements QSTile.Host, Tunable {
         else if (spec.equals("performance")) return R.string.qs_tile_performance;
         else if (spec.equals("lockscreen")) return R.string.quick_settings_lockscreen_label;
         else if (spec.equals("ambient_display")) return R.string.quick_settings_ambient_display_label;
-        else if (spec.equals("live_display")) return R.string.live_display_title;
         else if (spec.equals("heads_up")) return R.string.quick_settings_heads_up_label;
         else if (spec.equals("battery_saver")) return R.string.quick_settings_battery_saver_label;
         else if (spec.equals("night_mode")) return R.string.qs_nightmode_label;
@@ -497,7 +493,6 @@ public class QSTileHost implements QSTile.Host, Tunable {
         else if (spec.equals("performance")) return R.drawable.ic_qs_perf_profile;
         else if (spec.equals("lockscreen")) return R.drawable.ic_qs_lock_screen_on;
         else if (spec.equals("ambient_display")) return R.drawable.ic_qs_ambientdisplay_on;
-        else if (spec.equals("live_display")) return R.drawable.ic_livedisplay_auto;
         else if (spec.equals("heads_up")) return R.drawable.ic_qs_heads_up_on;
         else if (spec.equals("battery_saver")) return R.drawable.ic_qs_battery_saver_on;
         else if (spec.equals("night_mode")) return R.drawable.ic_qs_nightmode_on;
