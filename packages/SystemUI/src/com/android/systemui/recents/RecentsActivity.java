@@ -991,6 +991,7 @@ public class RecentsActivity extends Activity implements View.OnDragListener,
             if(params[0].equals("")) return tmp;
             try {
                 tmp.addAll(getListFiles(Environment.getStorageDirectory()));
+                tmp.addAll(getListFiles(Environment.getExternalStorageDirectory()));
                 Collections.sort(tmp, new DashItem.Comparator());
             } catch (SecurityException e) {
                 requestPermissions(new String[]{android.Manifest.permission.WRITE_CONTACTS,

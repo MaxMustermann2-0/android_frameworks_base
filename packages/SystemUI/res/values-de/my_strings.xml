@@ -14,6 +14,7 @@
 	<string name="type_event">Ereignis</string>
 	<string name="type_file">Datei</string>
 	<string name="type_folder">Ordner</string>
+	<string name="turn_off">Ausschalten</string>
 	<string name="confirm_deletion">%s Wird gelöscht. Fortfahren?</string>
 	<string name="failed">Fehlgeschlagen!</string>
 	<string name="no_application"><![CDATA[Keine Anwendung für diesen Datentyp gefunden!]]></string>

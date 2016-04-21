@@ -144,6 +144,8 @@
     <uses-permission android:name="cyanogenmod.permission.ACCESS_THEME_MANAGER" />
     <uses-permission android:name="cyanogenmod.permission.READ_THEMES" />
     <uses-permission android:name="cyanogenmod.permission.WRITE_THEMES" />
+    <uses-permission android:name="cyanogenmod.permission.HARDWARE_ABSTRACTION_ACCESS" />
+    <uses-permission android:name="cyanogenmod.permission.MANAGE_LIVEDISPLAY" />
 
     <application
         android:name=".SystemUIApplication"

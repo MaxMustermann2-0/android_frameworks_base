@@ -3,9 +3,11 @@ package com.android.systemui.nightmode;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.media.AudioManager;
 import android.os.Handler;
 import android.provider.Settings;
@@ -16,6 +18,7 @@ import com.android.systemui.cm.UserContentObserver;
 import com.android.systemui.statusbar.policy.ZenModeController;
 import com.android.systemui.volume.VolumeComponent;
 
+import cyanogenmod.hardware.LiveDisplayManager;
 import cyanogenmod.providers.CMSettings;
 import cyanogenmod.themes.ThemeChangeRequest;
 import cyanogenmod.themes.ThemeManager;
@@ -32,6 +35,7 @@ public class NightModeUI extends SystemUI {
     private Intent mSettingsIntent;
     private ContentResolver mContentResolver;
     private ZenModeController mZenController;
+    private DismissNightModeReceiver mDismissReceiver;
 
     @Override
     public void start() {
@@ -40,15 +44,28 @@ public class NightModeUI extends SystemUI {
         mThemeManager = ThemeManager.getInstance(mContext);
         mZenController = getComponent(VolumeComponent.class).getZenController();
         mContentResolver = mContext.getContentResolver();
-        mNotificationManager = (NotificationManager) mContext.getSystemService(Context.NOTIFICATION_SERVICE);
+        mNotificationManager = (NotificationManager) mContext.getSystemService(
+                Context.NOTIFICATION_SERVICE);
         SettingsObserver observer = new SettingsObserver(mHandler);
         observer.observe();
-        boolean nightMode = Settings.System.getInt(mContext.getContentResolver(), "nightmode_enable_nightmode", 0) == 1;
-        if (nightMode) showNightModeNotification();
-        else mNotificationManager.cancel("nightmode_enabled", 101);
+        boolean nightMode = Settings.System.getInt(mContext.getContentResolver(),
+                "nightmode_enable_nightmode", 0) == 1;
+        if (nightMode) {
+            showNightModeNotification();
+        } else {
+            mNotificationManager.cancel("nightmode_enabled", 101);
+            try {
+                mContext.unregisterReceiver(mDismissReceiver);
+            } catch (IllegalArgumentException e) {
+                //Ignore
+            }
+        }
     }
 
     private void showNightModeNotification() {
+        Intent intent = new Intent("dismiss_nightmode");
+        PendingIntent disableNightmode = PendingIntent.getBroadcast(mContext, 0, intent,
+                PendingIntent.FLAG_UPDATE_CURRENT);
         Notification.Builder builder = new Notification.Builder(mContext)
                 .setSmallIcon(R.drawable.stat_sys_nightmode)
                 .setShowWhen(false)
@@ -59,8 +76,12 @@ public class NightModeUI extends SystemUI {
                 .setContentIntent(PendingIntent.getActivity(mContext, 0, mSettingsIntent,
                         PendingIntent.FLAG_UPDATE_CURRENT))
                 .setColor(mContext.getResources().getColor(
-                        com.android.internal.R.color.system_notification_accent_color));
+                        com.android.internal.R.color.system_notification_accent_color))
+                .addAction(new Notification.Action.Builder(R.drawable.ic_close,
+                        mContext.getString(R.string.turn_off), disableNightmode).build());
         mNotificationManager.notify("nightmode_enabled", 101, builder.build());
+        if(mDismissReceiver == null) mDismissReceiver = new DismissNightModeReceiver();
+        mContext.registerReceiver(mDismissReceiver, new IntentFilter("dismiss_nightmode"));
     }
 
     private void enableNightMode() {
@@ -93,9 +114,8 @@ public class NightModeUI extends SystemUI {
             setNightModePreference("notification_light_pulse", 0, 1);
         }
         if (liveDisplayNightMode) {
-            int mode = Integer.parseInt(mContext.getResources().getStringArray(
-                    com.android.internal.R.array.live_display_values)[3]);
-            setCMNightModePreference(CMSettings.System.DISPLAY_TEMPERATURE_MODE, mode, 0);
+            setCMNightModePreference(CMSettings.System.DISPLAY_TEMPERATURE_MODE,
+                    LiveDisplayManager.MODE_NIGHT, 0);
         }
         if (useNightTheme) {
             applyNightTheme();
@@ -148,7 +168,8 @@ public class NightModeUI extends SystemUI {
             setDayModePreference("notification_light_pulse", 1);
         }
         if (liveDisplayNightMode) {
-            setCMDayModePreference(CMSettings.System.DISPLAY_TEMPERATURE_MODE, 0);
+            setCMNightModePreference(CMSettings.System.DISPLAY_TEMPERATURE_MODE,
+                    LiveDisplayManager.MODE_AUTO, 0);
         }
         if (useNightTheme) {
             applyDayTheme();
@@ -277,6 +298,17 @@ public class NightModeUI extends SystemUI {
             } else {
                 mNotificationManager.cancel("nightmode_enabled", 101);
                 disableNightMode();
+            }
+        }
+    }
+
+    private class DismissNightModeReceiver extends BroadcastReceiver {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent.getAction().equals("dismiss_nightmode")) {
+                Settings.System.putInt(mContext.getContentResolver(), "nightmode_enable_nightmode",
+                        0);
             }
         }
     }

@@ -14,6 +14,7 @@
     <string name="type_event">Event</string>
     <string name="type_file">File</string>
     <string name="type_folder">Folder</string>
+    <string name="turn_off">Turn off</string>
     <string name="confirm_deletion">%s will be deleted. Continue?</string>
     <string name="failed">Failed!</string>
     <string name="no_application"><![CDATA[No application found to open this kind of data!]]></string>
