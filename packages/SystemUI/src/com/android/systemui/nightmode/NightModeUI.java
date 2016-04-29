@@ -10,8 +10,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
 import android.media.AudioManager;
+import android.os.Environment;
 import android.os.Handler;
 import android.provider.Settings;
 import android.util.Log;
@@ -207,6 +209,7 @@ public class NightModeUI extends SystemUI {
     }
 
     private void applyNightTheme() {
+        backupDayWallpaper();
         String currentStyle = Settings.System.getString(mContentResolver, "theme_current_overlay");
         Settings.System.putString(mContentResolver, "daymode_theme_style", currentStyle);
         String currentStatus = Settings.System.getString(mContentResolver, "theme_current_status");
@@ -238,25 +241,23 @@ public class NightModeUI extends SystemUI {
     }
 
     private void applyDayTheme() {
+        restoreDayWallpaper();
         String nightStyle = Settings.System.getString(mContentResolver, "nightmode_theme_style");
         String nightStatus = Settings.System.getString(mContentResolver, "nightmode_theme_status");
         String nightNav = Settings.System.getString(mContentResolver, "nightmode_theme_nav");
         String nightIcons = Settings.System.getString(mContentResolver, "nightmode_theme_icons");
-        String nightWall = Settings.System.getString(mContentResolver, "nightmode_theme_wallpaper");
         String nightLock = Settings.System.getString(mContentResolver, "nightmode_theme_lockscreen");
 
         String newStyle = Settings.System.getString(mContentResolver, "daymode_theme_style");
         String newStatus = Settings.System.getString(mContentResolver, "daymode_theme_status");
         String newNav = Settings.System.getString(mContentResolver, "daymode_theme_nav");
         String newIcons = Settings.System.getString(mContentResolver, "daymode_theme_icons");
-        String newWall = Settings.System.getString(mContentResolver, "daymode_theme_wallpaper");
         String newLock = Settings.System.getString(mContentResolver, "daymode_theme_lockscreen");
 
         newStyle = newStyle == null ? "system" : newStyle;
         newStatus = newStatus == null ? "system" : newStatus;
         newNav = newNav == null ? "system" : newNav;
         newIcons = newIcons == null ? "system" : newIcons;
-        newWall = newWall == null ? "system" : newWall;
         newLock = newLock == null ? "system" : newLock;
 
         ThemeChangeRequest.Builder builder = new ThemeChangeRequest.Builder();
@@ -264,9 +265,43 @@ public class NightModeUI extends SystemUI {
         if (nightStatus != null) builder.setStatusBar(newStatus);
         if (nightNav != null) builder.setNavBar(newNav);
         if (nightIcons != null) builder.setIcons(newIcons);
-        if (nightWall != null) builder.setWallpaper(newWall);
         if (nightLock != null) builder.setLockWallpaper(newLock);
         mThemeManager.requestThemeChange(builder.build(), false);
+    }
+
+    private void backupDayWallpaper() {
+        Bitmap bitmap;
+        try {
+            WallpaperManager wm = WallpaperManager.getInstance(mContext);
+            bitmap = ((BitmapDrawable) wm.getDrawable()).getBitmap();
+        } catch (ClassCastException e) {
+            Log.e(TAG, "Could not backup wallpaper, it is not a bitmap drawable.");
+            return;
+        }
+        try {
+            File f = new File(mContext.getFilesDir(), "day_wallpaper.bkp");
+            if (f.exists()) f.delete();
+            f.createNewFile();
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, bos);
+            FileOutputStream fos = new FileOutputStream(f);
+            fos.write(bos.toByteArray());
+            bos.close();
+            fos.flush();
+            fos.close();
+        } catch (IOException e) {
+            Log.e(TAG, e.getClass().getSimpleName() + " " + e.getLocalizedMessage());
+        }
+    }
+
+    private void restoreDayWallpaper() {
+        WallpaperManager wm = WallpaperManager.getInstance(mContext);
+        try {
+            wm.setBitmap(BitmapFactory.decodeFile(
+                    new File(mContext.getFilesDir(), "day_wallpaper.bkp").getAbsolutePath()));
+        } catch (IOException e) {
+            Log.e(TAG, e.getClass().getSimpleName() + " " + e.getLocalizedMessage());
+        }
     }
 
     private void setNightModePreference(String key, int value, int defValue) {
