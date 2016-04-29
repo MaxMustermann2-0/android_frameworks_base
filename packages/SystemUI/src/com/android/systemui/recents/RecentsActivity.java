@@ -57,7 +57,6 @@ import java.util.ArrayList;
  * The main Recents activity that is started from AlternateRecentsComponent.
  */
 public class RecentsActivity extends Activity implements RecentsView.RecentsViewCallbacks,
-        RecentsAppWidgetHost.RecentsAppWidgetHostCallbacks,
         DebugOverlayView.DebugOverlayViewCallbacks {
 
     RecentsConfiguration mConfig;
@@ -73,11 +72,6 @@ public class RecentsActivity extends Activity implements RecentsView.RecentsView
 
     // Resize task debug
     RecentsResizeTaskDialog mResizeTaskDebugDialog;
-
-    // Search AppWidget
-    AppWidgetProviderInfo mSearchWidgetInfo;
-    RecentsAppWidgetHost mAppWidgetHost;
-    RecentsAppWidgetHostView mSearchWidgetHostView;
 
     // Runnables to finish the Recents activity
     FinishRecentsRunnable mFinishLaunchHomeRunnable;
@@ -167,11 +161,6 @@ public class RecentsActivity extends Activity implements RecentsView.RecentsView
             if (action.equals(Intent.ACTION_SCREEN_OFF)) {
                 // When the screen turns off, dismiss Recents to Home
                 dismissRecentsToHome(false);
-            } else if (action.equals(SearchManager.INTENT_GLOBAL_SEARCH_ACTIVITY_CHANGED)) {
-                // When the search activity changes, update the search widget view
-                SystemServicesProxy ssp = RecentsTaskLoader.getInstance().getSystemServicesProxy();
-                mSearchWidgetInfo = ssp.getOrBindSearchAppWidget(context, mAppWidgetHost);
-                refreshSearchWidgetView();
             }
         }
     };
@@ -256,15 +245,6 @@ public class RecentsActivity extends Activity implements RecentsView.RecentsView
             if (mEmptyView != null) {
                 mEmptyView.setVisibility(View.GONE);
                 mEmptyView.setOnClickListener(null);
-            }
-            if (!mConfig.searchBarEnabled) {
-                mRecentsView.setSearchBarVisibility(View.GONE);
-            } else {
-                if (mRecentsView.hasValidSearchBar()) {
-                    mRecentsView.setSearchBarVisibility(View.VISIBLE);
-                } else {
-                    refreshSearchWidgetView();
-                }
             }
         }
 
@@ -356,9 +336,6 @@ public class RecentsActivity extends Activity implements RecentsView.RecentsView
         SystemServicesProxy ssp = RecentsTaskLoader.getInstance().getSystemServicesProxy();
         mConfig = RecentsConfiguration.reinitialize(this, ssp);
 
-        // Initialize the widget host (the host id is static and does not change)
-        mAppWidgetHost = new RecentsAppWidgetHost(this, Constants.Values.App.AppWidgetHostId);
-
         // Set the Recents layout
         setContentView(R.layout.recents);
         mRecentsView = (RecentsView) findViewById(R.id.recents_view);
@@ -370,9 +347,6 @@ public class RecentsActivity extends Activity implements RecentsView.RecentsView
         mDebugOverlayStub = (ViewStub) findViewById(R.id.debug_overlay_stub);
         mScrimViews = new SystemBarScrimViews(this, mConfig);
         inflateDebugOverlay();
-
-        // Bind the search app widget when we first start up
-        mSearchWidgetInfo = ssp.getOrBindSearchAppWidget(this, mAppWidgetHost);
 
         // Register the broadcast receiver to handle messages when the screen is turned off
         IntentFilter filter = new IntentFilter();
@@ -489,9 +463,6 @@ public class RecentsActivity extends Activity implements RecentsView.RecentsView
 
         // Unregister the system broadcast receivers
         unregisterReceiver(mSystemBroadcastReceiver);
-
-        // Stop listening for widget package changes if there was one bound
-        mAppWidgetHost.stopListening();
     }
 
     public void onEnterAnimationTriggered() {
@@ -499,22 +470,6 @@ public class RecentsActivity extends Activity implements RecentsView.RecentsView
         ReferenceCountedTrigger t = new ReferenceCountedTrigger(this, null, null, null);
         ViewAnimation.TaskViewEnterContext ctx = new ViewAnimation.TaskViewEnterContext(t);
         mRecentsView.startEnterRecentsAnimation(ctx);
-
-        if (mSearchWidgetInfo != null) {
-            final WeakReference<RecentsAppWidgetHost.RecentsAppWidgetHostCallbacks> cbRef =
-                    new WeakReference<RecentsAppWidgetHost.RecentsAppWidgetHostCallbacks>(
-                            RecentsActivity.this);
-            ctx.postAnimationTrigger.addLastDecrementRunnable(new Runnable() {
-                @Override
-                public void run() {
-                    // Start listening for widget package changes if there is one bound
-                    RecentsAppWidgetHost.RecentsAppWidgetHostCallbacks cb = cbRef.get();
-                    if (cb != null) {
-                        mAppWidgetHost.startListening(cb);
-                    }
-                }
-            });
-        }
 
         // Animate the SystemUI scrim views
         mScrimViews.startEnterRecentsAnimation();
@@ -656,27 +611,6 @@ public class RecentsActivity extends Activity implements RecentsView.RecentsView
     @Override
     public void runAfterPause(Runnable r) {
         mAfterPauseRunnable = r;
-    }
-
-    /**** RecentsAppWidgetHost.RecentsAppWidgetHostCallbacks Implementation ****/
-
-    @Override
-    public void refreshSearchWidgetView() {
-        if (mSearchWidgetInfo != null) {
-            SystemServicesProxy ssp = RecentsTaskLoader.getInstance().getSystemServicesProxy();
-            int searchWidgetId = ssp.getSearchAppWidgetId(this);
-            mSearchWidgetHostView = (RecentsAppWidgetHostView) mAppWidgetHost.createView(
-                    this, searchWidgetId, mSearchWidgetInfo);
-            Bundle opts = new Bundle();
-            opts.putInt(AppWidgetManager.OPTION_APPWIDGET_HOST_CATEGORY,
-                    AppWidgetProviderInfo.WIDGET_CATEGORY_SEARCHBOX);
-            mSearchWidgetHostView.updateAppWidgetOptions(opts);
-            // Set the padding to 0 for this search widget
-            mSearchWidgetHostView.setPadding(0, 0, 0, 0);
-            mRecentsView.setSearchBar(mSearchWidgetHostView);
-        } else {
-            mRecentsView.setSearchBar(null);
-        }
     }
 
     /**** DebugOverlayView.DebugOverlayViewCallbacks ****/
