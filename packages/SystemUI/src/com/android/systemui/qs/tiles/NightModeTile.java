@@ -45,7 +45,6 @@ public class NightModeTile extends QSTile<QSTile.BooleanState> {
 
     @Override
     protected void handleClick() {
-        mHost.collapsePanels();
         boolean nightmodeEnabled = Settings.System.getInt(mContext.getContentResolver(),
                 "nightmode_enable_nightmode", 0) == 1;
         if (!nightmodeEnabled) {
@@ -111,7 +110,6 @@ public class NightModeTile extends QSTile<QSTile.BooleanState> {
 
         @Override
         public void setToggleState(boolean state) {
-            mHost.collapsePanels();
             Settings.System.putInt(mContext.getContentResolver(), "nightmode_enable_nightmode",
                     state ? 1 : 0);
             fireToggleStateChanged(state);
