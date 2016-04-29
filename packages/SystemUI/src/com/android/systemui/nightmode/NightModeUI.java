@@ -3,20 +3,30 @@ package com.android.systemui.nightmode;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.app.WallpaperManager;
 import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
 import android.media.AudioManager;
 import android.os.Handler;
 import android.provider.Settings;
+import android.util.Log;
 
 import com.android.systemui.R;
 import com.android.systemui.SystemUI;
 import com.android.systemui.cm.UserContentObserver;
 import com.android.systemui.statusbar.policy.ZenModeController;
 import com.android.systemui.volume.VolumeComponent;
+
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 
 import cyanogenmod.hardware.LiveDisplayManager;
 import cyanogenmod.providers.CMSettings;
@@ -80,11 +90,12 @@ public class NightModeUI extends SystemUI {
                 .addAction(new Notification.Action.Builder(R.drawable.ic_close,
                         mContext.getString(R.string.turn_off), disableNightmode).build());
         mNotificationManager.notify("nightmode_enabled", 101, builder.build());
-        if(mDismissReceiver == null) mDismissReceiver = new DismissNightModeReceiver();
+        if (mDismissReceiver == null) mDismissReceiver = new DismissNightModeReceiver();
         mContext.registerReceiver(mDismissReceiver, new IntentFilter("dismiss_nightmode"));
     }
 
     private void enableNightMode() {
+        showNightModeNotification();
         boolean lowBrightness = Settings.System.getInt(mContentResolver, "nightmode_low_brightness",
                 0) == 1;
         boolean disableBatteryLight = Settings.System.getInt(mContentResolver,
@@ -168,8 +179,8 @@ public class NightModeUI extends SystemUI {
             setDayModePreference("notification_light_pulse", 1);
         }
         if (liveDisplayNightMode) {
-            setCMNightModePreference(CMSettings.System.DISPLAY_TEMPERATURE_MODE,
-                    LiveDisplayManager.MODE_AUTO, 0);
+            setCMDayModePreference(CMSettings.System.DISPLAY_TEMPERATURE_MODE,
+                    LiveDisplayManager.MODE_AUTO);
         }
         if (useNightTheme) {
             applyDayTheme();
@@ -187,10 +198,15 @@ public class NightModeUI extends SystemUI {
             int newVolume = Settings.System.getInt(mContentResolver, "daymode_media_volume", 0);
             mAudioManager.setStreamVolume(AudioManager.STREAM_MUSIC, newVolume, 0);
         }
+        mNotificationManager.cancel("nightmode_enabled", 101);
+        try {
+            mContext.unregisterReceiver(mDismissReceiver);
+        } catch (IllegalArgumentException e) {
+            //Ignore
+        }
     }
 
     private void applyNightTheme() {
-
         String currentStyle = Settings.System.getString(mContentResolver, "theme_current_overlay");
         Settings.System.putString(mContentResolver, "daymode_theme_style", currentStyle);
         String currentStatus = Settings.System.getString(mContentResolver, "theme_current_status");
@@ -253,7 +269,6 @@ public class NightModeUI extends SystemUI {
         mThemeManager.requestThemeChange(builder.build(), false);
     }
 
-
     private void setNightModePreference(String key, int value, int defValue) {
         int currentValue = Settings.System.getInt(mContentResolver, key, defValue);
         Settings.System.putInt(mContentResolver, "daymode_" + key, currentValue);
@@ -291,12 +306,11 @@ public class NightModeUI extends SystemUI {
 
         @Override
         protected void update() {
-            boolean nightMode = Settings.System.getInt(mContentResolver, "nightmode_enable_nightmode", 0) == 1;
+            boolean nightMode = Settings.System.getInt(mContentResolver,
+                    "nightmode_enable_nightmode", 0) == 1;
             if (nightMode) {
-                showNightModeNotification();
                 enableNightMode();
             } else {
-                mNotificationManager.cancel("nightmode_enabled", 101);
                 disableNightMode();
             }
         }
