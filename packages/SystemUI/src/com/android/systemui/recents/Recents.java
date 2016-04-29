@@ -29,7 +29,6 @@ import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.graphics.Point;
 import android.graphics.Rect;
 import android.os.AsyncTask;
 import android.os.Handler;
@@ -40,7 +39,6 @@ import android.util.MutableBoolean;
 import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.WindowManager;
 
 import com.android.internal.logging.MetricsLogger;
 import com.android.systemui.Prefs;
@@ -56,7 +54,6 @@ import com.android.systemui.recents.model.RecentsTaskLoader;
 import com.android.systemui.recents.model.Task;
 import com.android.systemui.recents.model.TaskGrouping;
 import com.android.systemui.recents.model.TaskStack;
-import com.android.systemui.recents.views.RecentTaskView;
 import com.android.systemui.recents.views.TaskStackView;
 import com.android.systemui.recents.views.TaskStackViewLayoutAlgorithm;
 import com.android.systemui.recents.views.TaskViewHeader;
@@ -225,7 +222,6 @@ public class Recents extends SystemUI
     TaskViewHeader mHeaderBar;
     final Object mHeaderBarLock = new Object();
     TaskStackView mDummyStackView;
-    RecentTaskView mDummyRecentTask;
 
     // Variables to keep track of if we need to start recents after binding
     boolean mTriggeredFromAltTab;
@@ -709,29 +705,9 @@ public class Recents extends SystemUI
         }
         if (thumbnail != null) {
             mStartAnimationTriggered = false;
-            WindowManager wm = (WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE);
-            Display display = wm.getDefaultDisplay();
-            Point size = new Point();
-            display.getSize(size);
-            int width = size.x;
-            int height = size.y;
-            int thumbnailSize = mContext.getResources()
-                    .getDimensionPixelSize(R.dimen.recents_thumbnail_size);
-            int thumbMargin = mContext.getResources()
-                    .getDimensionPixelSize(R.dimen.recents_thumbnail_margin);
-            if (height > width) {
-                thumbnailSize = thumbnailSize - 2 * thumbMargin;
-                return ActivityOptions.makeThumbnailAspectScaleDownAnimation(mDummyStackView,
-                        thumbnail, width - thumbnailSize - thumbMargin,
-                        (int) (height * (12.0 / 16.0) + 24 *
-                                mContext.getResources().getDisplayMetrics().density), thumbnailSize,
-                        thumbnailSize, mHandler, this);
-            } else {
-                return ActivityOptions.makeThumbnailAspectScaleDownAnimation(mDummyStackView,
-                        thumbnail, (int) (width * 0.8 + thumbMargin),
-                        (int) (height - thumbnailSize * 0.8),
-                        (int) (width * 0.2 - thumbMargin), thumbnailSize, mHandler, this);
-            }
+            return ActivityOptions.makeThumbnailAspectScaleDownAnimation(mDummyStackView,
+                    thumbnail, toTaskRect.left, toTaskRect.top, toTaskRect.width(),
+                    toTaskRect.height(), mHandler, this);
         }
 
         // If both the screenshot and thumbnail fails, then just fall back to the default transition
@@ -794,7 +770,7 @@ public class Recents extends SystemUI
                 } else {
                     Canvas c = new Canvas(thumbnail);
                     c.scale(toTransform.scale, toTransform.scale);
-                    //mHeaderBar.rebindToTask(toTask);
+                    mHeaderBar.rebindToTask(toTask);
                     mHeaderBar.draw(c);
                     c.setBitmap(null);
                 }

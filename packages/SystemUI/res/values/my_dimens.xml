@@ -1,6 +1,0 @@
-<resources>
-    <dimen name="dash_caption_size">30sp</dimen>
-    <dimen name="dash_list_icon_size">48dp</dimen>
-    <dimen name="recents_thumbnail_size">116dp</dimen>
-    <dimen name="recents_thumbnail_margin">4dp</dimen>
-</resources>

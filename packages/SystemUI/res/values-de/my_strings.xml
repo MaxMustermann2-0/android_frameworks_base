@@ -5,23 +5,4 @@
 	<string name="qs_nightmode_label">Nachtmodus</string>
 	<string name="status_bar_su">Superuser</string>
 	<string name="quick_settings_color">Farbschema</string>
-	<string name="recent_apps">Letzte Apps</string>
-	<string name="search">Suche…</string>
-	<string name="type_application">Anwendung</string>
-	<string name="type_contact">Kontakt</string>
-	<string name="type_album">Album</string>
-	<string name="type_track">Lied</string>
-	<string name="type_event">Ereignis</string>
-	<string name="type_file">Datei</string>
-	<string name="type_folder">Ordner</string>
-	<string name="turn_off">Ausschalten</string>
-	<string name="confirm_deletion">%s Wird gelöscht. Fortfahren?</string>
-	<string name="failed">Fehlgeschlagen!</string>
-	<string name="no_application"><![CDATA[Keine Anwendung für diesen Datentyp gefunden!]]></string>
-	<string name="recents_pin_application">Anpinnen</string>
-	<string name="recents_wipe_data">Daten löschen</string>
-	<string name="recents_uninstall">Deinstallieren</string>
-	<string name="recents_multiwindow">Multiwindow</string>
-	<string name="recents_app_info">App-Info</string>
-	<string name="recents_kill">Beenden</string>
 </resources>
