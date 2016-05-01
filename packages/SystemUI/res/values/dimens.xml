@@ -242,7 +242,7 @@
     <dimen name="recents_task_bar_height">56dp</dimen>
 
     <!-- The height of the search bar space. -->
-    <dimen name="recents_search_bar_space_height">64dp</dimen>
+    <dimen name="recents_search_bar_space_height">48dp</dimen>
 
     <!-- The side padding for the task stack as a percentage of the width. -->
     <item name="recents_stack_width_padding_percentage" format="float" type="dimen">0.03333</item>

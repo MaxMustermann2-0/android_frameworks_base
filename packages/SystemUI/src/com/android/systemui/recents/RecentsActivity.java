@@ -18,19 +18,44 @@ package com.android.systemui.recents;
 
 import android.app.Activity;
 import android.app.ActivityOptions;
+import android.app.AlertDialog;
 import android.app.SearchManager;
-import android.appwidget.AppWidgetManager;
-import android.appwidget.AppWidgetProviderInfo;
 import android.content.BroadcastReceiver;
+import android.content.ContentUris;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
+import android.database.Cursor;
+import android.graphics.PorterDuff;
+import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Environment;
+import android.os.Handler;
 import android.os.SystemClock;
 import android.os.UserHandle;
+import android.provider.CalendarContract;
+import android.provider.ContactsContract;
+import android.provider.MediaStore;
+import android.provider.Settings;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.util.Log;
+import android.view.DragEvent;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewStub;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
+import android.view.animation.RotateAnimation;
+import android.view.animation.ScaleAnimation;
+import android.widget.EditText;
+import android.widget.GridView;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.android.internal.logging.MetricsLogger;
@@ -48,16 +73,21 @@ import com.android.systemui.recents.views.DebugOverlayView;
 import com.android.systemui.recents.views.RecentsView;
 import com.android.systemui.recents.views.SystemBarScrimViews;
 import com.android.systemui.recents.views.ViewAnimation;
-import cyanogenmod.providers.CMSettings;
 
-import java.lang.ref.WeakReference;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.text.DateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * The main Recents activity that is started from AlternateRecentsComponent.
  */
 public class RecentsActivity extends Activity implements RecentsView.RecentsViewCallbacks,
-        DebugOverlayView.DebugOverlayViewCallbacks {
+        DebugOverlayView.DebugOverlayViewCallbacks, View.OnClickListener, View.OnDragListener {
 
     RecentsConfiguration mConfig;
     long mLastTabKeyEventTime;
@@ -78,6 +108,21 @@ public class RecentsActivity extends Activity implements RecentsView.RecentsView
 
     // Runnable to be executed after we paused ourselves
     Runnable mAfterPauseRunnable;
+
+    private ArrayList<SearchItem> mApplications;
+    private ArrayList<SearchItem> mSearchableData;
+    private ArrayList<SearchItem> mSearchResults;
+    private ArrayList<SearchItem> mFilesResults;
+    private GridView mSearchResultView;
+    private EditText mSearch;
+    private ImageView mExpandCollapse;
+    private View mSearchOverlay;
+    private ImageView mSearchDeleter;
+    private boolean mApplicationIndexing = false;
+    private boolean mDataIndexing = false;
+    private boolean mFilesIndexing = false;
+    private boolean mSearchExpanded = false;
+
 
     /**
      * A common Runnable to finish Recents either by calling finish() (with a custom animation) or
@@ -175,7 +220,9 @@ public class RecentsActivity extends Activity implements RecentsView.RecentsView
         }
     });
 
-    /** Updates the set of recent tasks */
+    /**
+     * Updates the set of recent tasks
+     */
     void updateRecentsTasks() {
         // If AlternateRecentsComponent has preloaded a load plan, then use that to prevent
         // reconstructing the task stack
@@ -205,9 +252,9 @@ public class RecentsActivity extends Activity implements RecentsView.RecentsView
         homeIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK |
                 Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
         mFinishLaunchHomeRunnable = new FinishRecentsRunnable(homeIntent,
-            ActivityOptions.makeCustomAnimation(this,
-                 R.anim.recents_to_search_launcher_enter,
-                    R.anim.recents_to_search_launcher_exit));
+                ActivityOptions.makeCustomAnimation(this,
+                        R.anim.recents_to_search_launcher_enter,
+                        R.anim.recents_to_search_launcher_exit));
 
         // Mark the task that is the launch target
         int taskStackCount = stacks.size();
@@ -274,13 +321,15 @@ public class RecentsActivity extends Activity implements RecentsView.RecentsView
         MetricsLogger.histogram(this, "overview_task_count", taskCount);
     }
 
-    /** Dismisses recents if we are already visible and the intent is to toggle the recents view */
+    /**
+     * Dismisses recents if we are already visible and the intent is to toggle the recents view
+     */
     boolean dismissRecentsToFocusedTaskOrHome(boolean checkFilteredStackState) {
         SystemServicesProxy ssp = RecentsTaskLoader.getInstance().getSystemServicesProxy();
         if (ssp.isRecentsTopMost(ssp.getTopMostTask(), null)) {
             // If we currently have filtered stacks, then unfilter those first
             if (checkFilteredStackState &&
-                mRecentsView.unfilterFilteredStacks()) return true;
+                    mRecentsView.unfilterFilteredStacks()) return true;
             // If we have a focused Task, launch that Task now
             if (mRecentsView.launchFocusedTask()) return true;
             // If we launched from Home, then return to Home
@@ -297,7 +346,9 @@ public class RecentsActivity extends Activity implements RecentsView.RecentsView
         return false;
     }
 
-    /** Dismisses Recents directly to Home. */
+    /**
+     * Dismisses Recents directly to Home.
+     */
     void dismissRecentsToHomeRaw(boolean animated) {
         if (animated) {
             ReferenceCountedTrigger exitTrigger = new ReferenceCountedTrigger(this,
@@ -309,13 +360,17 @@ public class RecentsActivity extends Activity implements RecentsView.RecentsView
         }
     }
 
-    /** Dismisses Recents directly to Home without transition animation. */
+    /**
+     * Dismisses Recents directly to Home without transition animation.
+     */
     void dismissRecentsToHomeWithoutTransitionAnimation() {
         finish();
         overridePendingTransition(0, 0);
     }
 
-    /** Dismisses Recents directly to Home if we currently aren't transitioning. */
+    /**
+     * Dismisses Recents directly to Home if we currently aren't transitioning.
+     */
     boolean dismissRecentsToHome(boolean animated) {
         SystemServicesProxy ssp = RecentsTaskLoader.getInstance().getSystemServicesProxy();
         if (ssp.isRecentsTopMost(ssp.getTopMostTask(), null)) {
@@ -326,7 +381,9 @@ public class RecentsActivity extends Activity implements RecentsView.RecentsView
         return false;
     }
 
-    /** Called with the activity is first created. */
+    /**
+     * Called with the activity is first created.
+     */
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -340,9 +397,6 @@ public class RecentsActivity extends Activity implements RecentsView.RecentsView
         setContentView(R.layout.recents);
         mRecentsView = (RecentsView) findViewById(R.id.recents_view);
         mRecentsView.setCallbacks(this);
-        mRecentsView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
-                View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
-                View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
         mEmptyViewStub = (ViewStub) findViewById(R.id.empty_view_stub);
         mDebugOverlayStub = (ViewStub) findViewById(R.id.debug_overlay_stub);
         mScrimViews = new SystemBarScrimViews(this, mConfig);
@@ -353,9 +407,47 @@ public class RecentsActivity extends Activity implements RecentsView.RecentsView
         filter.addAction(Intent.ACTION_SCREEN_OFF);
         filter.addAction(SearchManager.INTENT_GLOBAL_SEARCH_ACTIVITY_CHANGED);
         registerReceiver(mSystemBroadcastReceiver, filter);
+        mSearchableData = new ArrayList<>();
+        mApplications = new ArrayList<>();
+        mSearchResults = new ArrayList<>();
+        mFilesResults = new ArrayList<>();
+        new IndexApplicationsTask().execute();
+        new IndexDataTask().execute();
+        mSearch = (EditText) findViewById(R.id.dash_search);
+        mSearchResultView = (GridView) findViewById(R.id.search_results_grid);
+        mExpandCollapse = (ImageView) findViewById(R.id.search_expand_icon);
+        mExpandCollapse.setOnClickListener(this);
+        mSearchOverlay = findViewById(R.id.recents_search_overlay);
+        mSearchOverlay.setOnClickListener(this);
+        mSearchDeleter = (ImageView) findViewById(R.id.search_delete_icon);
+        mSearchDeleter.setOnDragListener(this);
+        mSearch.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int start, int count,
+                                          int after) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int start, int before, int count) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+                updateSearchResults();
+                if (!mApplicationIndexing) new IndexApplicationsTask().execute();
+                if (!mDataIndexing) new IndexDataTask().execute();
+                if (mSearch.getText().toString().length() > 0) {
+                    new IndexFilesTask().execute(mSearch.getText().toString());
+                }
+            }
+        });
     }
 
-    /** Inflates the debug overlay if debug mode is enabled. */
+    /**
+     * Inflates the debug overlay if debug mode is enabled.
+     */
     void inflateDebugOverlay() {
         if (!Constants.DebugFlags.App.EnableDebugMode) return;
 
@@ -395,6 +487,11 @@ public class RecentsActivity extends Activity implements RecentsView.RecentsView
 
         // Register any broadcast receivers for the task loader
         loader.registerReceivers(this, mRecentsView);
+
+        boolean autoOpenSearch = Settings.System.getInt(getContentResolver(),
+                "recents_auto_launch_search", 0) == 1;
+        if(autoOpenSearch && !mSearchExpanded) expandSearch();
+        if(!autoOpenSearch && mSearchExpanded) collapseSearch();
 
         // Update the recent tasks
         updateRecentsTasks();
@@ -528,6 +625,11 @@ public class RecentsActivity extends Activity implements RecentsView.RecentsView
 
     @Override
     public void onBackPressed() {
+        if(mSearchExpanded) {
+            collapseSearch();
+            return;
+        }
+
         // Test mode where back does not do anything
         if (mConfig.debugModeEnabled) return;
 
@@ -535,7 +637,9 @@ public class RecentsActivity extends Activity implements RecentsView.RecentsView
         dismissRecentsToFocusedTaskOrHome(true);
     }
 
-    /** Called when debug mode is triggered */
+    /**
+     * Called when debug mode is triggered
+     */
     public void onDebugModeTriggered() {
         if (mConfig.developerOptionsEnabled) {
             if (Prefs.getBoolean(this, Prefs.Key.DEBUG_MODE_ENABLED, false /* boolean */)) {
@@ -556,13 +660,15 @@ public class RecentsActivity extends Activity implements RecentsView.RecentsView
                 }
             }
             Toast.makeText(this, "Debug mode (" + Constants.Values.App.DebugModeVersion + ") " +
-                (mConfig.debugModeEnabled ? "Enabled" : "Disabled") + ", please restart Recents now",
-                Toast.LENGTH_SHORT).show();
+                            (mConfig.debugModeEnabled ? "Enabled" : "Disabled") + ", please restart Recents now",
+                    Toast.LENGTH_SHORT).show();
         }
     }
 
 
-    /**** RecentsResizeTaskDialog ****/
+    /****
+     * RecentsResizeTaskDialog
+     ****/
 
     private RecentsResizeTaskDialog getResizeTaskDebugDialog() {
         if (mResizeTaskDebugDialog == null) {
@@ -576,7 +682,9 @@ public class RecentsActivity extends Activity implements RecentsView.RecentsView
         getResizeTaskDebugDialog().showResizeTaskDialog(t, mRecentsView);
     }
 
-    /**** RecentsView.RecentsViewCallbacks Implementation ****/
+    /****
+     * RecentsView.RecentsViewCallbacks Implementation
+     ****/
 
     @Override
     public void onExitToHomeAnimationTriggered() {
@@ -613,7 +721,9 @@ public class RecentsActivity extends Activity implements RecentsView.RecentsView
         mAfterPauseRunnable = r;
     }
 
-    /**** DebugOverlayView.DebugOverlayViewCallbacks ****/
+    /****
+     * DebugOverlayView.DebugOverlayViewCallbacks
+     ****/
 
     @Override
     public void onPrimarySeekBarChanged(float progress) {
@@ -623,5 +733,465 @@ public class RecentsActivity extends Activity implements RecentsView.RecentsView
     @Override
     public void onSecondarySeekBarChanged(float progress) {
         // Do nothing
+    }
+
+
+    @Override
+    public void onClick(View view) {
+        if (view == mExpandCollapse) {
+            if (mSearchExpanded) collapseSearch();
+            else expandSearch();
+        } else if (view == mSearchOverlay) {
+            collapseSearch();
+        }
+    }
+
+    private void expandSearch() {
+        mSearchExpanded = true;
+        mSearchResultView.setEmptyView(findViewById(R.id.grid_empty_view));
+        mSearchResultView.setVisibility(View.GONE);
+        mSearchOverlay.setVisibility(View.VISIBLE);
+        mExpandCollapse.setImageResource(R.drawable.ic_expand_less);
+        View searchLayout = findViewById(R.id.search_layout);
+        int height = getResources().getDimensionPixelSize(R.dimen.recents_search_bar_space_height);
+        float targetHeight = mSearchOverlay.getHeight() * 0.75f;
+        ExpandAnimation expandAnim = new ExpandAnimation(searchLayout, height, targetHeight);
+        expandAnim.setDuration(300);
+        expandAnim.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                mSearchResultView.setVisibility(View.VISIBLE);
+                AlphaAnimation alphaAnim = new AlphaAnimation(0f, 1f);
+                alphaAnim.setDuration(300);
+                mSearchResultView.startAnimation(alphaAnim);
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+
+            }
+        });
+        AlphaAnimation alphaAnimation = new AlphaAnimation(0f, 1f);
+        alphaAnimation.setDuration(300);
+        RotateAnimation rotateAnim = new RotateAnimation(180, 0, Animation.RELATIVE_TO_SELF, 0.5f,
+                Animation.RELATIVE_TO_SELF, 0.5f);
+        rotateAnim.setDuration(300);
+        searchLayout.startAnimation(expandAnim);
+        mExpandCollapse.startAnimation(rotateAnim);
+        mSearchOverlay.startAnimation(alphaAnimation);
+    }
+
+    private void collapseSearch() {
+        mSearchExpanded = false;
+        findViewById(R.id.grid_empty_view).setVisibility(View.GONE);
+        AlphaAnimation alphaAnim = new AlphaAnimation(1f, 0f);
+        alphaAnim.setDuration(300);
+        alphaAnim.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                mExpandCollapse.setImageResource(R.drawable.ic_qs_tile_expand);
+                mSearchResultView.setVisibility(View.GONE);
+                View searchLayout = findViewById(R.id.search_layout);
+                float height = mSearchOverlay.getHeight() * 0.75f;
+                int targetHeight = getResources()
+                        .getDimensionPixelSize(R.dimen.recents_search_bar_space_height);
+                ExpandAnimation expandAnim = new ExpandAnimation(searchLayout, height, targetHeight);
+                expandAnim.setDuration(300);
+                RotateAnimation rotateAnim = new RotateAnimation(180, 0, Animation.RELATIVE_TO_SELF,
+                        0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
+                AlphaAnimation alphaAnim = new AlphaAnimation(1f, 0f);
+                alphaAnim.setDuration(300);
+                new Handler().postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        mSearchOverlay.setVisibility(View.GONE);
+                    }
+                }, 300);
+                rotateAnim.setDuration(300);
+                searchLayout.startAnimation(expandAnim);
+                mExpandCollapse.startAnimation(rotateAnim);
+                mSearchOverlay.startAnimation(alphaAnim);
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+
+            }
+        });
+        mSearchResultView.startAnimation(alphaAnim);
+    }
+
+    private void updateSearchResults() {
+        View searchLayout = findViewById(R.id.search_layout);
+        if (!mSearchExpanded) expandSearch();
+        if (mSearch.getText().toString().length() > 0) {
+            mSearchResults.clear();
+            for (SearchItem item : mApplications) {
+                if (item.getLabel().toLowerCase().contains(mSearch.getText().toString()
+                        .toLowerCase())) {
+                    mSearchResults.add(item);
+                }
+            }
+            for (SearchItem item : mSearchableData) {
+                if (item.getLabel().toLowerCase().contains(mSearch.getText().toString()
+                        .toLowerCase())) {
+                    mSearchResults.add(item);
+                }
+            }
+            if (mFilesResults != null) {
+                for (SearchItem item : mFilesResults) {
+                    if (item.getLabel().toLowerCase().contains(mSearch.getText().toString()
+                            .toLowerCase())) {
+                        mSearchResults.add(item);
+                    }
+                }
+            }
+            SearchGridAdapter adapter = new SearchGridAdapter(RecentsActivity.this, mSearchResults);
+            mSearchResultView.setAdapter(adapter);
+            findViewById(R.id.dash_search_progress).setVisibility(mApplicationIndexing ||
+                    mDataIndexing || mFilesIndexing ? View.VISIBLE : View.GONE);
+            mSearchDeleter.setVisibility(mApplicationIndexing || mDataIndexing || mFilesIndexing ?
+                    View.INVISIBLE : View.VISIBLE);
+        } else {
+            SearchGridAdapter adapter = new SearchGridAdapter(RecentsActivity.this, mApplications);
+            mSearchResultView.setAdapter(adapter);
+            findViewById(R.id.dash_search_progress).setVisibility(mApplicationIndexing ?
+                    View.VISIBLE : View.GONE);
+            mSearchDeleter.setVisibility(mApplicationIndexing ? View.INVISIBLE : View.VISIBLE);
+            mFilesResults = null;
+        }
+    }
+
+    @Override
+    public boolean onDrag(View v, DragEvent event) {
+        switch (event.getAction()) {
+            case DragEvent.ACTION_DRAG_STARTED:
+                mSearchDeleter.setImageResource(R.drawable.ic_delete);
+                mSearchDeleter.setVisibility(View.VISIBLE);
+                SearchItem dashItem = (SearchItem) event.getLocalState();
+                if (dashItem.getType() == SearchItem.TYPE_APPLICATION) {
+                    try {
+                        ApplicationInfo applicationInfo = getPackageManager()
+                                .getApplicationInfo(dashItem.getLaunchInfo(), 0);
+                        if ((applicationInfo.flags & ApplicationInfo.FLAG_SYSTEM) != 0) {
+                            mSearchDeleter.setImageResource(R.drawable.ic_info);
+                        }
+                    } catch (PackageManager.NameNotFoundException e) {
+                        Log.e(getClass().getSimpleName(), e.getMessage());
+                    }
+                }
+                break;
+            case DragEvent.ACTION_DRAG_ENTERED:
+                mSearchDeleter.setVisibility(View.VISIBLE);
+                mSearchDeleter.setAlpha(1f);
+                mSearchDeleter.setColorFilter(0xFFF44336, PorterDuff.Mode.SRC_IN);
+                break;
+            case DragEvent.ACTION_DRAG_EXITED:
+                mSearchDeleter.setVisibility(View.VISIBLE);
+                mSearchDeleter.setAlpha(0.5f);
+                mSearchDeleter.setColorFilter(0xFF000000, PorterDuff.Mode.SRC_IN);
+                break;
+            case DragEvent.ACTION_DROP:
+                final SearchItem item = (SearchItem) event.getLocalState();
+                if (item.getType() == SearchItem.TYPE_APPLICATION) {
+                    try {
+                        ApplicationInfo applicationInfo = getPackageManager()
+                                .getApplicationInfo(item.getLaunchInfo(), 0);
+                        if ((applicationInfo.flags & ApplicationInfo.FLAG_SYSTEM) == 0) {
+                            Intent intent = new Intent(Intent.ACTION_UNINSTALL_PACKAGE);
+                            intent.setData(Uri.parse("package:" + item.getLaunchInfo()));
+                            startActivity(intent);
+                        } else {
+                            Intent intent =
+                                    new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                            intent.setData(Uri.parse("package:" + item.getLaunchInfo()));
+                            startActivity(intent);
+                        }
+                    } catch (PackageManager.NameNotFoundException e) {
+                        Log.e(getClass().getSimpleName(), e.getMessage());
+                    }
+                } else {
+                    AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                    builder.setMessage(getString(R.string.confirm_deletion, item.getLabel()))
+                            .setPositiveButton(android.R.string.ok,
+                                    new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialogInterface,
+                                                            int i) {
+                                            deleteItem(item);
+                                            if (!mApplicationIndexing)
+                                                new IndexApplicationsTask().execute();
+                                            if (!mDataIndexing) new IndexDataTask().execute();
+                                            if (mSearch.getText().toString().length() > 0) {
+                                                new IndexFilesTask()
+                                                        .execute(mSearch.getText().toString());
+                                            }
+                                            dialogInterface.dismiss();
+                                        }
+                                    })
+                            .setNegativeButton(android.R.string.cancel,
+                                    new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialogInterface, int i) {
+                                            dialogInterface.cancel();
+                                        }
+                                    }).show();
+                }
+            case DragEvent.ACTION_DRAG_ENDED:
+                mSearchDeleter.setAlpha(0.5f);
+                mSearchDeleter.setImageResource(R.drawable.ic_search);
+                mSearchDeleter.setColorFilter(0xFF000000, PorterDuff.Mode.SRC_IN);
+                if (findViewById(R.id.dash_search_progress).getVisibility() == View.VISIBLE) {
+                    mSearchDeleter.setVisibility(View.INVISIBLE);
+                }
+                break;
+        }
+        return true;
+    }
+
+    private void deleteItem (SearchItem item){
+        try {
+            switch (item.getType()) {
+                case SearchItem.TYPE_FILE:
+                    if (item.getMoreLaunchInfo().equals("file")) {
+                        File file = new File(item.getLaunchInfo());
+                        boolean success = file.delete();
+                        if (!success) Toast.makeText(RecentsActivity.this, R.string.failed,
+                                Toast.LENGTH_SHORT).show();
+                    } else {
+                        try {
+                            deleteDirectory(new File(item.getLaunchInfo()));
+                        } catch (IOException e) {
+                            Toast.makeText(RecentsActivity.this, R.string.failed,
+                                    Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                    break;
+                case SearchItem.TYPE_CALENDAR:
+                    Uri uri = ContentUris.withAppendedId(CalendarContract.Events.CONTENT_URI,
+                            Long.parseLong(item.getLaunchInfo()));
+                    getContentResolver().delete(uri, null, null);
+                    break;
+                case SearchItem.TYPE_CONTACT:
+                    uri = ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_URI,
+                            Long.parseLong(item.getLaunchInfo()));
+                    getContentResolver().delete(uri, null, null);
+                    break;
+                case SearchItem.TYPE_MUSIC:
+                    uri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                            Long.parseLong(item.getLaunchInfo()));
+                    getContentResolver().delete(uri, null, null);
+                    File file = new File(item.getMoreLaunchInfo());
+                    boolean success = file.delete();
+                    if (!success) Toast.makeText(RecentsActivity.this,
+                            R.string.failed, Toast.LENGTH_SHORT).show();
+                    break;
+            }
+        } catch (SecurityException e) {
+            requestPermissions(new String[]{
+                            android.Manifest.permission.WRITE_CONTACTS,
+                            android.Manifest.permission.WRITE_CALENDAR,
+                            android.Manifest.permission.WRITE_EXTERNAL_STORAGE}, 0);
+        }
+    }
+
+    private void deleteDirectory(File f) throws IOException {
+        if (f.isDirectory()) {
+            for (File c : f.listFiles())
+                deleteDirectory(c);
+        }
+        if (!f.delete()) throw new FileNotFoundException("Failed to delete file: " + f);
+    }
+
+
+    private class IndexApplicationsTask extends AsyncTask<Object, Object, ArrayList<SearchItem>> {
+
+        @Override
+        protected ArrayList<SearchItem> doInBackground(Object... params) {
+            mApplicationIndexing = true;
+            ArrayList<SearchItem> tmp = new ArrayList<>();
+            PackageManager pm = getPackageManager();
+
+            Intent i = new Intent(Intent.ACTION_MAIN, null);
+            i.addCategory(Intent.CATEGORY_LAUNCHER);
+
+            List<ResolveInfo> availableActivities = pm.queryIntentActivities(i, 0);
+            for (ResolveInfo ri : availableActivities) {
+                SearchItem app = new SearchItem(SearchItem.TYPE_APPLICATION, ri.loadLabel(pm)
+                        .toString(),
+                        getString(R.string.type_application), ri.activityInfo.packageName,
+                        ri.activityInfo.name);
+                tmp.add(app);
+            }
+            Collections.sort(tmp, new SearchItem.Comparator());
+            return tmp;
+        }
+
+        @Override
+        protected void onPostExecute(ArrayList<SearchItem> list) {
+            super.onPostExecute(list);
+            if (mApplications == null) mApplications = new ArrayList<>();
+            mApplications.clear();
+            mApplications.addAll(list);
+            mApplicationIndexing = false;
+            if (mSearchResultView == null) return;
+            updateSearchResults();
+        }
+    }
+
+    private class IndexFilesTask extends AsyncTask<String, Object, ArrayList<SearchItem>> {
+
+        String search;
+
+        @Override
+        protected ArrayList<SearchItem> doInBackground(String... params) {
+            mFilesIndexing = true;
+            search = params[0];
+            ArrayList<SearchItem> tmp = new ArrayList<>();
+            boolean searchFiles = Settings.System.getInt(getContentResolver(),
+                    "recents_search_files", 1) == 1;
+            if (params[0].equals("") || !searchFiles) return tmp;
+            try {
+                tmp.addAll(getListFiles(Environment.getStorageDirectory()));
+                tmp.addAll(getListFiles(Environment.getExternalStorageDirectory()));
+                Collections.sort(tmp, new SearchItem.Comparator());
+            } catch (SecurityException e) {
+                requestPermissions(new String[]{android.Manifest.permission.WRITE_CONTACTS,
+                        android.Manifest.permission.WRITE_CALENDAR,
+                        android.Manifest.permission.WRITE_EXTERNAL_STORAGE}, 0);
+            }
+            return tmp;
+        }
+
+        private ArrayList<SearchItem> getListFiles(File parentDir) {
+            ArrayList<SearchItem> inFiles = new ArrayList<>();
+            if (!mSearch.getText().toString().equals(search)) return inFiles;
+            File[] files = parentDir.listFiles();
+            if (files == null || files.length == 0) return inFiles;
+            for (File file : files) {
+                if (file.isDirectory()) {
+                    if (file.getName().toLowerCase().contains(search.toLowerCase())) {
+                        inFiles.add(new SearchItem(SearchItem.TYPE_FILE, file.getName(),
+                                getString(R.string.type_folder), file.getAbsolutePath(), "folder"));
+                    }
+                    inFiles.addAll(getListFiles(file));
+                } else {
+                    if (file.getName().toLowerCase().contains(search.toLowerCase())) {
+                        inFiles.add(new SearchItem(SearchItem.TYPE_FILE, file.getName(),
+                                getString(R.string.type_file), file.getAbsolutePath(), "file"));
+                    }
+                }
+            }
+            return inFiles;
+        }
+
+        @Override
+        protected void onPostExecute(ArrayList<SearchItem> list) {
+            super.onPostExecute(list);
+            if (!mSearch.getText().toString().equals(search)) return;
+            if (mFilesResults == null) mFilesResults = new ArrayList<>();
+            mFilesResults.clear();
+            mFilesResults.addAll(list);
+            if (mSearchResultView == null) return;
+            mFilesIndexing = false;
+            updateSearchResults();
+        }
+    }
+
+    private class IndexDataTask extends AsyncTask<Object, Object, ArrayList<SearchItem>> {
+
+        @Override
+        protected ArrayList<SearchItem> doInBackground(Object... params) {
+            mDataIndexing = true;
+            ArrayList<SearchItem> tmp = new ArrayList<>();
+            try {
+                int id;
+                boolean searchContacts = Settings.System.getInt(getContentResolver(),
+                        "recents_search_contacts", 1) == 1;
+                if (searchContacts) {
+                    Uri contactsUri = ContactsContract.CommonDataKinds.Phone.CONTENT_URI;
+                    String[] contactsProjection = {
+                            ContactsContract.CommonDataKinds.Phone.CONTACT_ID,
+                            ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME};
+                    Cursor contactsCursor = getContentResolver().query(contactsUri,
+                            contactsProjection, null, null, null);
+                    int name = contactsCursor.getColumnIndex(
+                            ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME);
+                    id = contactsCursor
+                            .getColumnIndex(ContactsContract.CommonDataKinds.Phone.CONTACT_ID);
+                    while (contactsCursor.moveToNext()) {
+                        SearchItem item = new SearchItem(SearchItem.TYPE_CONTACT,
+                                contactsCursor.getString(name), getString(R.string.type_contact),
+                                contactsCursor.getString(id), null);
+                        tmp.add(item);
+                    }
+                    contactsCursor.close();
+                }
+                boolean searchMusic = Settings.System.getInt(getContentResolver(),
+                        "recents_search_music", 1) == 1;
+                if (searchMusic) {
+                    Uri musicUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
+                    String[] trackProjection = {MediaStore.Audio.Media._ID,
+                            MediaStore.Audio.Media.TITLE, MediaStore.Audio.Media.DATA};
+                    Cursor musicCursor = getContentResolver().query(musicUri, trackProjection,
+                            null, null, null);
+                    id = musicCursor.getColumnIndex(MediaStore.Audio.Media._ID);
+                    int title = musicCursor.getColumnIndex(MediaStore.Audio.Media.TITLE);
+                    int path = musicCursor.getColumnIndex(MediaStore.Audio.Media.DATA);
+                    while (musicCursor.moveToNext()) {
+                        SearchItem item = new SearchItem(SearchItem.TYPE_MUSIC,
+                                musicCursor.getString(title), getString(R.string.type_track),
+                                musicCursor.getString(id), musicCursor.getString(path));
+                        tmp.add(item);
+                    }
+                    musicCursor.close();
+                }
+                boolean searchCalendar = Settings.System.getInt(getContentResolver(),
+                        "recents_search_calendar", 1) == 1;
+                if (searchCalendar) {
+                    Uri.Builder builder = CalendarContract.Instances.CONTENT_URI.buildUpon();
+                    ContentUris.appendId(builder, System.currentTimeMillis());
+                    ContentUris.appendId(builder, System.currentTimeMillis() + 31536000000L);
+                    String[] calendarProjection = {CalendarContract.Instances.EVENT_ID,
+                            CalendarContract.Instances.TITLE};
+                    Cursor calendarCursor = getContentResolver().query(builder.build(),
+                            calendarProjection, null, null, null);
+                    while (calendarCursor.moveToNext()) {
+                        String eventTitle = calendarCursor.getString(1);
+                        SearchItem item = new SearchItem(SearchItem.TYPE_CALENDAR, eventTitle,
+                                getString(R.string.type_event), calendarCursor.getString(0), null);
+                        tmp.add(item);
+                    }
+                    calendarCursor.close();
+                }
+            } catch (SecurityException e) {
+                requestPermissions(new String[]{android.Manifest.permission.READ_CONTACTS,
+                        android.Manifest.permission.READ_CALENDAR,
+                        android.Manifest.permission.READ_EXTERNAL_STORAGE}, 0);
+                return tmp;
+            }
+            return tmp;
+        }
+
+        @Override
+        protected void onPostExecute(ArrayList<SearchItem> list) {
+            super.onPostExecute(list);
+            if (mSearchableData == null) mSearchableData = new ArrayList<>();
+            mSearchableData.clear();
+            mSearchableData.addAll(list);
+            mDataIndexing = false;
+            if (mSearchResultView == null) return;
+            updateSearchResults();
+        }
     }
 }

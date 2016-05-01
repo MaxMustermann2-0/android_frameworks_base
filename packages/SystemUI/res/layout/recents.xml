@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Copyright (C) 2014 The Android Open Source Project
+<?xml version="1.0" encoding="utf-8"?><!-- Copyright (C) 2014 The Android Open Source Project
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -13,38 +12,30 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
-<FrameLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
-    <!-- Status Bar Scrim View -->
-    <ImageView
-        android:id="@+id/status_bar_scrim"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal|top"
-        android:scaleType="fitXY"
-        android:src="@drawable/recents_status_gradient" />
 
     <!-- Recents View -->
     <com.android.systemui.recents.views.RecentsView
         android:id="@+id/recents_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:focusable="true">
-    </com.android.systemui.recents.views.RecentsView>
+        android:focusable="true" />
 
     <!-- Empty View -->
-    <ViewStub android:id="@+id/empty_view_stub"
-           android:layout="@layout/recents_empty"
-           android:layout_width="match_parent"
-           android:layout_height="match_parent" />
+    <ViewStub
+        android:id="@+id/empty_view_stub"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout="@layout/recents_empty" />
 
     <!-- Debug Overlay View -->
-    <ViewStub android:id="@+id/debug_overlay_stub"
-           android:layout="@layout/recents_debug_overlay"
-           android:layout_width="match_parent"
-           android:layout_height="match_parent" />
+    <ViewStub
+        android:id="@+id/debug_overlay_stub"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout="@layout/recents_debug_overlay" />
 
     <!-- Nav Bar Scrim View -->
     <ImageView
@@ -54,4 +45,80 @@
         android:layout_gravity="center_horizontal|bottom"
         android:scaleType="fitXY"
         android:src="@drawable/recents_lower_gradient" />
+
+    <View
+        android:id="@+id/recents_search_overlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#50000000"
+        android:clickable="true"
+        android:visibility="invisible" />
+
+    <RelativeLayout
+        android:id="@+id/search_layout"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/recents_search_bar_space_height"
+        android:layout_marginEnd="8dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="2dp"
+        android:background="@drawable/card_view_bg"
+        android:elevation="1dp">
+
+        <ImageView
+            android:id="@+id/search_delete_icon"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_margin="12dp"
+            android:alpha="0.5"
+            android:clickable="true"
+            android:src="@drawable/ic_search"
+            android:tint="#000" />
+
+        <ProgressBar
+            android:id="@+id/dash_search_progress"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_margin="12dp" />
+
+        <EditText
+            android:id="@+id/dash_search"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/recents_search_bar_space_height"
+            android:layout_alignEnd="@+id/search_expand_icon"
+            android:layout_toEndOf="@+id/search_delete_icon"
+            android:background="@null"
+            android:hint="@string/search" />
+
+        <ImageView
+            android:id="@+id/search_expand_icon"
+            android:layout_width="@dimen/recents_search_bar_space_height"
+            android:layout_height="@dimen/recents_search_bar_space_height"
+            android:layout_alignParentEnd="true"
+            android:alpha="0.5"
+            android:clickable="true"
+            android:foreground="?android:selectableItemBackgroundBorderless"
+            android:foregroundTint="#000"
+            android:padding="12dp"
+            android:src="@drawable/ic_qs_tile_expand"
+            android:tint="#000" />
+
+        <GridView
+            android:id="@+id/search_results_grid"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_below="@+id/dash_search"
+            android:numColumns="4"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/grid_empty_view"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:layout_centerVertical="true"
+            android:paddingTop="24dp"
+            android:text="@string/no_results"
+            android:visibility="gone" />
+    </RelativeLayout>
 </FrameLayout>

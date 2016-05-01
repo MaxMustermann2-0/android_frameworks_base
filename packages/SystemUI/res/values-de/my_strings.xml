@@ -1,9 +1,21 @@
 <resources>
-	<string name="quick_settings_display_rotation_label">Bildschirmausrichtung</string>
-	<string name="nightmode_enabled">Nachtmodus ist aktiviert</string>
-	<string name="nightmode_settings">Hier tippen um Einstellungen zu öffnen</string>
-	<string name="qs_nightmode_label">Nachtmodus</string>
-	<string name="status_bar_su">Superuser</string>
-	<string name="quick_settings_color">Farbschema</string>
-	<string name="turn_off">Ausschalten</string>
+    <string name="quick_settings_display_rotation_label">Bildschirmausrichtung</string>
+    <string name="nightmode_enabled">Nachtmodus ist aktiviert</string>
+    <string name="nightmode_settings">Hier tippen um Einstellungen zu öffnen</string>
+    <string name="qs_nightmode_label">Nachtmodus</string>
+    <string name="status_bar_su">Superuser</string>
+    <string name="quick_settings_color">Farbschema</string>
+    <string name="turn_off">Ausschalten</string>
+    <string name="search">Suche…</string>
+    <string name="type_application">Application</string>
+    <string name="type_contact">Kontact</string>
+    <string name="type_album">Album</string>
+    <string name="type_track">Lied</string>
+    <string name="type_event">Ereignis</string>
+    <string name="type_file">Datei</string>
+    <string name="type_folder">Ordner</string>
+    <string name="failed">Fehlgeschlagen!</string>
+    <string name="no_results">Nichts gefunden</string>
+    <string name="no_application"><![CDATA[Keine Anwendung für diesen Datentyp gefunden!]]></string>
+    <string name="confirm_deletion">%s wird gelöscht. Fortfahren?</string>
 </resources>
