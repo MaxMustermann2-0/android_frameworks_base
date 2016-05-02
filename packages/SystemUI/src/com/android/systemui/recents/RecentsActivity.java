@@ -30,6 +30,7 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.database.Cursor;
+import android.graphics.Point;
 import android.graphics.PorterDuff;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -45,6 +46,7 @@ import android.provider.Settings;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.view.Display;
 import android.view.DragEvent;
 import android.view.KeyEvent;
 import android.view.View;
@@ -488,11 +490,6 @@ public class RecentsActivity extends Activity implements RecentsView.RecentsView
         // Register any broadcast receivers for the task loader
         loader.registerReceivers(this, mRecentsView);
 
-        boolean autoOpenSearch = Settings.System.getInt(getContentResolver(),
-                "recents_auto_launch_search", 0) == 1;
-        if(autoOpenSearch && !mSearchExpanded) expandSearch();
-        if(!autoOpenSearch && mSearchExpanded) collapseSearch();
-
         // Update the recent tasks
         updateRecentsTasks();
 
@@ -515,11 +512,18 @@ public class RecentsActivity extends Activity implements RecentsView.RecentsView
             overridePendingTransition(0, 0);
         }
         super.onResume();
+        boolean autoOpenSearch = Settings.System.getInt(getContentResolver(),
+                "recents_auto_launch_search", 0) == 1;
+        if (autoOpenSearch) expandSearch();
+        else collapseSearch();
     }
 
     @Override
     protected void onPause() {
         super.onPause();
+        boolean autoOpenSearch = Settings.System.getInt(getContentResolver(),
+                "recents_auto_launch_search", 0) == 1;
+        if (mSearchExpanded && !autoOpenSearch) collapseSearch();
         if (mAfterPauseRunnable != null) {
             mRecentsView.post(mAfterPauseRunnable);
             mAfterPauseRunnable = null;
@@ -741,12 +745,13 @@ public class RecentsActivity extends Activity implements RecentsView.RecentsView
         if (view == mExpandCollapse) {
             if (mSearchExpanded) collapseSearch();
             else expandSearch();
-        } else if (view == mSearchOverlay) {
+        } else if (view == mSearchOverlay && mSearchExpanded) {
             collapseSearch();
         }
     }
 
     private void expandSearch() {
+        if (mSearchExpanded) return;
         mSearchExpanded = true;
         mSearchResultView.setEmptyView(findViewById(R.id.grid_empty_view));
         mSearchResultView.setVisibility(View.GONE);
@@ -754,7 +759,10 @@ public class RecentsActivity extends Activity implements RecentsView.RecentsView
         mExpandCollapse.setImageResource(R.drawable.ic_expand_less);
         View searchLayout = findViewById(R.id.search_layout);
         int height = getResources().getDimensionPixelSize(R.dimen.recents_search_bar_space_height);
-        float targetHeight = mSearchOverlay.getHeight() * 0.75f;
+        Display display = getWindowManager().getDefaultDisplay();
+        Point size = new Point();
+        display.getSize(size);
+        float targetHeight = size.y * 0.75f;
         ExpandAnimation expandAnim = new ExpandAnimation(searchLayout, height, targetHeight);
         expandAnim.setDuration(300);
         expandAnim.setAnimationListener(new Animation.AnimationListener() {
@@ -787,6 +795,7 @@ public class RecentsActivity extends Activity implements RecentsView.RecentsView
     }
 
     private void collapseSearch() {
+        if (!mSearchExpanded) return;
         mSearchExpanded = false;
         findViewById(R.id.grid_empty_view).setVisibility(View.GONE);
         AlphaAnimation alphaAnim = new AlphaAnimation(1f, 0f);
@@ -832,8 +841,7 @@ public class RecentsActivity extends Activity implements RecentsView.RecentsView
     }
 
     private void updateSearchResults() {
-        View searchLayout = findViewById(R.id.search_layout);
-        if (!mSearchExpanded) expandSearch();
+        if (!mSearchExpanded && mSearch.getText().toString().length() > 0) expandSearch();
         if (mSearch.getText().toString().length() > 0) {
             mSearchResults.clear();
             for (SearchItem item : mApplications) {
