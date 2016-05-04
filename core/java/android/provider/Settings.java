@@ -1509,7 +1509,6 @@ public final class Settings {
             // At one time in System, then Global, but now back in Secure
             MOVED_TO_SECURE.add(Secure.INSTALL_NON_MARKET_APPS);
 
-            MOVED_TO_SECURE.add(System.DEV_FORCE_SHOW_NAVBAR);
             MOVED_TO_SECURE.add(System.KEYBOARD_BRIGHTNESS);
             MOVED_TO_SECURE.add(System.BUTTON_BRIGHTNESS);
             MOVED_TO_SECURE.add(System.BUTTON_BACKLIGHT_TIMEOUT);
@@ -6443,6 +6442,18 @@ public final class Settings {
          * {@hide}
          */
         public static final String BLUETOOTH_DISABLED_PROFILES = "bluetooth_disabled_profiles";
+
+        /**
+         * A semi-colon separated list of Bluetooth interoperability workarounds.
+         * Each entry is a partial Bluetooth device address string and an integer representing
+         * the feature to be disabled, separated by a comma. The integer must correspond
+         * to a interoperability feature as defined in "interop.h" in /system/bt.
+         * <p>
+         * Example: <br/>
+         *   "00:11:22,0;01:02:03:04,2"
+         * @hide
+         */
+       public static final String BLUETOOTH_INTEROPERABILITY_LIST = "bluetooth_interoperability_list";
 
         /**
          * The policy for deciding when Wi-Fi should go to sleep (which will in
