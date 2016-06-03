@@ -264,6 +264,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+
+import cyanogenmod.power.PerformanceManagerInternal;
+
 import java.util.Date;
 import java.text.SimpleDateFormat;
 
@@ -1093,6 +1096,8 @@ public final class ActivityManagerService extends ActivityManagerNative
      * sleeping while it is active.
      */
     private IVoiceInteractionSession mRunningVoice;
+
+    PerformanceManagerInternal mPerf;
 
     /**
      * For some direct access we need to power manager.
@@ -2200,6 +2205,7 @@ public final class ActivityManagerService extends ActivityManagerNative
 
                 try {
                     Intent protectedAppIntent = new Intent();
+                    protectedAppIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
                     protectedAppIntent.setComponent(
                             new ComponentName("com.android.settings",
                                     "com.android.settings.applications.ProtectedAppsActivity"));
@@ -2232,6 +2238,8 @@ public final class ActivityManagerService extends ActivityManagerNative
                             .build();
                     try {
                         int[] outId = new int[1];
+                        inm.cancelNotificationWithTag("android", null,
+                                R.string.notify_package_component_protected_title, msg.arg1);
                         inm.enqueueNotificationWithTag("android", "android", null,
                                 R.string.notify_package_component_protected_title,
                                 notification, outId, mCurrentUserId);
@@ -3440,6 +3448,17 @@ public final class ActivityManagerService extends ActivityManagerNative
                 null /* entryPoint */, null /* entryPointArgs */);
     }
 
+    void launchBoost(int pid, String packageName) {
+        if (mPerf == null) {
+            mPerf = LocalServices.getService(PerformanceManagerInternal.class);
+            if (mPerf == null) {
+                Slog.e(TAG, "PerformanceManager not ready!");
+                return;
+            }
+        }
+        mPerf.launchBoost(pid, packageName);
+    }
+
     private final void startProcessLocked(ProcessRecord app, String hostingType,
             String hostingNameStr, String abiOverride, String entryPoint, String[] entryPointArgs) {
         long startTime = SystemClock.elapsedRealtime();
@@ -3602,6 +3621,9 @@ public final class ActivityManagerService extends ActivityManagerNative
             checkTime(startTime, "startProcess: building log message");
             StringBuilder buf = mStringBuilder;
             buf.setLength(0);
+            if (hostingType.equals("activity")) {
+                launchBoost(startResult.pid, app.processName);
+            }
             buf.append("Start proc ");
             buf.append(startResult.pid);
             buf.append(':');
@@ -12553,6 +12575,7 @@ public final class ActivityManagerService extends ActivityManagerNative
         synchronized (sb) {
             bufferWasEmpty = sb.length() == 0;
             appendDropBoxProcessHeaders(process, processName, sb);
+            sb.append("CM Version: ").append(cyanogenmod.os.Build.CYANOGENMOD_VERSION).append("\n");
             sb.append("Build: ").append(Build.FINGERPRINT).append("\n");
             sb.append("System-App: ").append(isSystemApp).append("\n");
             sb.append("Uptime-Millis: ").append(info.violationUptimeMillis).append("\n");
@@ -12822,6 +12845,7 @@ public final class ActivityManagerService extends ActivityManagerNative
         if (subject != null) {
             sb.append("Subject: ").append(subject).append("\n");
         }
+        sb.append("CM Version: ").append(cyanogenmod.os.Build.CYANOGENMOD_VERSION).append("\n");
         sb.append("Build: ").append(Build.FINGERPRINT).append("\n");
         if (Debug.isDebuggerConnected()) {
             sb.append("Debugger: Connected\n");

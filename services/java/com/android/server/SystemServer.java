@@ -99,6 +99,9 @@ import cyanogenmod.providers.CMSettings;
 import dalvik.system.VMRuntime;
 
 import java.io.File;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -181,11 +184,10 @@ public final class SystemServer {
         public AdbPortObserver() {
             super(null);
         }
-
         @Override
         public void onChange(boolean selfChange) {
             int adbPort = CMSettings.Secure.getInt(mContentResolver,
-                    CMSettings.Secure.ADB_PORT, 0);
+                CMSettings.Secure.ADB_PORT, 0);
             // setting this will control whether ADB runs on TCP/IP or USB
             SystemProperties.set("adb.network.port", Integer.toString(adbPort));
         }
@@ -434,7 +436,7 @@ public final class SystemServer {
         NetworkPolicyManagerService networkPolicy = null;
         ConnectivityService connectivity = null;
         NetworkScoreService networkScore = null;
-        NsdService serviceDiscovery = null;
+        NsdService serviceDiscovery= null;
         WindowManagerService wm = null;
         UsbService usb = null;
         SerialService serial = null;
@@ -456,8 +458,8 @@ public final class SystemServer {
         boolean disableNetwork = SystemProperties.getBoolean("config.disable_network", false);
         boolean disableNetworkTime = SystemProperties.getBoolean("config.disable_networktime", false);
         boolean isEmulator = SystemProperties.get("ro.kernel.qemu").equals("1");
-        String[] externalServices = context.getResources().getStringArray(
-                org.cyanogenmod.platform.internal.R.array.config_externalCMServices);
+        String externalServer = context.getResources().getString(
+                org.cyanogenmod.platform.internal.R.string.config_externalSystemServer);
 
         try {
             Slog.i(TAG, "Reading configuration...");
@@ -539,7 +541,7 @@ public final class SystemServer {
             } else if (mFactoryTestMode == FactoryTest.FACTORY_TEST_LOW_LEVEL) {
                 Slog.i(TAG, "No Bluetooth Service (factory test)");
             } else if (!context.getPackageManager().hasSystemFeature
-                    (PackageManager.FEATURE_BLUETOOTH)) {
+                       (PackageManager.FEATURE_BLUETOOTH)) {
                 Slog.i(TAG, "No Bluetooth Service (Bluetooth Hardware Not Present)");
             } else if (disableBluetooth) {
                 Slog.i(TAG, "Bluetooth Service disabled by config");
@@ -591,7 +593,7 @@ public final class SystemServer {
 
         if (mFactoryTestMode != FactoryTest.FACTORY_TEST_LOW_LEVEL) {
             if (!disableStorage &&
-                    !"0".equals(SystemProperties.get("system_init.startmountservice"))) {
+                !"0".equals(SystemProperties.get("system_init.startmountservice"))) {
                 try {
                     /*
                      * NotificationManagerService is dependant on MountService,
@@ -620,14 +622,14 @@ public final class SystemServer {
             ActivityManagerNative.getDefault().showBootMessage(
                     context.getResources().getText(
                             com.android.internal.R.string.android_upgrading_starting_apps),
-                    false, -1);
+                    false);
         } catch (RemoteException e) {
         }
 
         if (mFactoryTestMode != FactoryTest.FACTORY_TEST_LOW_LEVEL) {
             if (!disableNonCoreServices) {
                 try {
-                    Slog.i(TAG, "LockSettingsService");
+                    Slog.i(TAG,  "LockSettingsService");
                     lockSettings = new LockSettingsService(context);
                     ServiceManager.addService("lock_settings", lockSettings);
                 } catch (Throwable e) {
@@ -706,7 +708,7 @@ public final class SystemServer {
                     Slog.i(TAG, "NetworkPolicy Service");
                     networkPolicy = new NetworkPolicyManagerService(
                             context, mActivityManagerService,
-                            (IPowerManager) ServiceManager.getService(Context.POWER_SERVICE),
+                            (IPowerManager)ServiceManager.getService(Context.POWER_SERVICE),
                             networkStats, networkManagement);
                     ServiceManager.addService(Context.NETWORK_POLICY_SERVICE, networkPolicy);
                 } catch (Throwable e) {
@@ -716,12 +718,12 @@ public final class SystemServer {
                 mSystemServiceManager.startService(WIFI_P2P_SERVICE_CLASS);
                 mSystemServiceManager.startService(WIFI_SERVICE_CLASS);
                 mSystemServiceManager.startService(
-                        "com.android.server.wifi.WifiScanningService");
+                            "com.android.server.wifi.WifiScanningService");
 
                 mSystemServiceManager.startService("com.android.server.wifi.RttService");
 
                 if (mPackageManager.hasSystemFeature(PackageManager.FEATURE_ETHERNET) ||
-                        mPackageManager.hasSystemFeature(PackageManager.FEATURE_USB_HOST)) {
+                    mPackageManager.hasSystemFeature(PackageManager.FEATURE_USB_HOST)) {
                     mSystemServiceManager.startService(ETHERNET_SERVICE_CLASS);
                 }
 
@@ -826,7 +828,7 @@ public final class SystemServer {
             }
 
             if (!disableNonCoreServices && context.getResources().getBoolean(
-                    R.bool.config_enableWallpaperService)) {
+                        R.bool.config_enableWallpaperService)) {
                 try {
                     Slog.i(TAG, "Wallpaper Service");
                     wallpaper = new WallpaperManagerService(context);
@@ -870,7 +872,7 @@ public final class SystemServer {
 
                 if (mPackageManager.hasSystemFeature(PackageManager.FEATURE_USB_HOST)
                         || mPackageManager.hasSystemFeature(
-                        PackageManager.FEATURE_USB_ACCESSORY)) {
+                                PackageManager.FEATURE_USB_ACCESSORY)) {
                     // Manage USB host and device support
                     mSystemServiceManager.startService(USB_SERVICE_CLASS);
                 }
@@ -922,7 +924,7 @@ public final class SystemServer {
                 // there is little overhead for running this service.
                 Slog.i(TAG, "SamplingProfiler Service");
                 ServiceManager.addService("samplingprofiler",
-                        new SamplingProfilerService(context));
+                            new SamplingProfilerService(context));
             } catch (Throwable e) {
                 reportWtf("starting SamplingProfiler Service", e);
             }
@@ -1035,8 +1037,8 @@ public final class SystemServer {
 
         // register observer to listen for settings changes
         mContentResolver.registerContentObserver(
-                CMSettings.Secure.getUriFor(CMSettings.Secure.ADB_PORT),
-                false, new AdbPortObserver());
+            CMSettings.Secure.getUriFor(CMSettings.Secure.ADB_PORT),
+            false, new AdbPortObserver());
 
         // Before things start rolling, be sure we have decided whether
         // we are in safe mode.
@@ -1053,13 +1055,22 @@ public final class SystemServer {
         // MMS service broker
         mmsService = mSystemServiceManager.startService(MmsServiceBroker.class);
 
-        for (String service : externalServices) {
-            try {
-                Slog.i(TAG, service);
-                mSystemServiceManager.startService(service);
-            } catch (Throwable e) {
-                reportWtf("starting " + service, e);
-            }
+        final Class<?> serverClazz;
+        try {
+            serverClazz = Class.forName(externalServer);
+            final Constructor<?> constructor = serverClazz.getDeclaredConstructor(Context.class);
+            constructor.setAccessible(true);
+            final Object baseObject = constructor.newInstance(mSystemContext);
+            final Method method = baseObject.getClass().getDeclaredMethod("run");
+            method.setAccessible(true);
+            method.invoke(baseObject);
+        } catch (ClassNotFoundException
+                | IllegalAccessException
+                | InvocationTargetException
+                | InstantiationException
+                | NoSuchMethodException e) {
+            Slog.wtf(TAG, "Unable to start  " + externalServer);
+            Slog.wtf(TAG, e);
         }
 
         // It is now time to start up the app processes...
@@ -1098,7 +1109,7 @@ public final class SystemServer {
         // propagate to it.
         Configuration config = wm.computeNewConfiguration();
         DisplayMetrics metrics = new DisplayMetrics();
-        WindowManager w = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+        WindowManager w = (WindowManager)context.getSystemService(Context.WINDOW_SERVICE);
         w.getDefaultDisplay().getMetrics(metrics);
         context.getResources().updateConfiguration(config, metrics);
 
@@ -1301,7 +1312,7 @@ public final class SystemServer {
     static final void startSystemUi(Context context) {
         Intent intent = new Intent();
         intent.setComponent(new ComponentName("com.android.systemui",
-                "com.android.systemui.SystemUIService"));
+                    "com.android.systemui.SystemUIService"));
         //Slog.d(TAG, "Starting service: " + intent);
         context.startServiceAsUser(intent, UserHandle.OWNER);
     }
@@ -1316,7 +1327,7 @@ public final class SystemServer {
             if (pm.hasSystemFeature(PackageManager.FEATURE_NFC)) {
                 Intent intent = new Intent();
                 intent.setComponent(new ComponentName("com.android.nfc",
-                        "com.android.nfc.NfcBootstrapService"));
+                            "com.android.nfc.NfcBootstrapService"));
                 context.startServiceAsUser(intent, UserHandle.OWNER);
             }
         } catch (RemoteException e) {
