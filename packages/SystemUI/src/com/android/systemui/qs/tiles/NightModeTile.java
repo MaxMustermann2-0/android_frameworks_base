@@ -124,21 +124,21 @@ public class NightModeTile extends QSTile<QSTile.BooleanState> {
 
         private void updateCheckedItems() {
             boolean lowBrightness = Settings.System.getInt(mContext.getContentResolver(),
-                    "nightmode_low_brightness", 0) == 1;
+                    "nightmode_low_brightness", 1) == 1;
             boolean disableBatteryLight = Settings.System.getInt(mContext.getContentResolver(),
-                    "nightmode_disable_battery_light", 0) == 1;
+                    "nightmode_disable_battery_light", 1) == 1;
             boolean ambientDisplay = Settings.System.getInt(mContext.getContentResolver(),
-                    "nightmode_ambient_display", 0) == 1;
+                    "nightmode_ambient_display", 1) == 1;
             boolean disableNotificationLight = Settings.System.getInt(mContext.getContentResolver(),
-                    "nightmode_disable_notification_light", 0) == 1;
+                    "nightmode_disable_notification_light", 1) == 1;
             boolean liveDisplayNightMode = Settings.System.getInt(mContext.getContentResolver(),
-                    "nightmode_live_display_night", 0) == 1;
+                    "nightmode_live_display_night", 1) == 1;
             boolean useNightTheme = Settings.System.getInt(mContext.getContentResolver(),
                     "nightmode_use_night_theme", 0) == 1;
             int interruptions = Settings.System.getInt(mContext.getContentResolver(),
-                    "nightmode_interruptions", -1);
+                    "nightmode_interruptions", 1);
             boolean muteMedia = Settings.System.getInt(mContext.getContentResolver(),
-                    "nightmode_mute_media_sound", 0) == 1;
+                    "nightmode_mute_media_sound", 1) == 1;
 
             mItems.getListView().setItemChecked(0, useNightTheme);
             mItems.getListView().setItemChecked(1, lowBrightness);
@@ -188,7 +188,7 @@ public class NightModeTile extends QSTile<QSTile.BooleanState> {
             Settings.System.putInt(mContext.getContentResolver(),
                     "nightmode_ambient_display", mItems.getListView().isItemChecked(3) ? 1 : 0);
             Settings.System.putInt(mContext.getContentResolver(),
-                    "nightmode_interruptions", mItems.getListView().isItemChecked(4) ? 2 : -1);
+                    "nightmode_interruptions", mItems.getListView().isItemChecked(4) ? 1 : -1);
             Settings.System.putInt(mContext.getContentResolver(),
                     "nightmode_mute_media_sound", mItems.getListView().isItemChecked(5) ? 1 : 0);
             Settings.System.putInt(mContext.getContentResolver(),

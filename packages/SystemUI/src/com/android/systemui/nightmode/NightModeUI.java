@@ -35,9 +35,6 @@ import cyanogenmod.providers.CMSettings;
 import cyanogenmod.themes.ThemeChangeRequest;
 import cyanogenmod.themes.ThemeManager;
 
-/**
- * Created by mm20 on 18.10.15.
- */
 public class NightModeUI extends SystemUI {
     private static final String TAG = "NightModeUI";
     protected Handler mHandler = new Handler();
@@ -99,20 +96,20 @@ public class NightModeUI extends SystemUI {
     private void enableNightMode() {
         showNightModeNotification();
         boolean lowBrightness = Settings.System.getInt(mContentResolver, "nightmode_low_brightness",
-                0) == 1;
+                1) == 1;
         boolean disableBatteryLight = Settings.System.getInt(mContentResolver,
-                "nightmode_disable_battery_light", 0) == 1;
+                "nightmode_disable_battery_light", 1) == 1;
         boolean disableNotificationLight = Settings.System.getInt(mContentResolver,
-                "nightmode_disable_notification_light", 0) == 1;
+                "nightmode_disable_notification_light", 1) == 1;
         boolean ambientDisplay = Settings.System.getInt(mContentResolver,
-                "nightmode_ambient_display", 0) == 1;
+                "nightmode_ambient_display", 1) == 1;
         boolean liveDisplayNightMode = Settings.System.getInt(mContentResolver,
-                "nightmode_live_display_night", 0) == 1;
+                "nightmode_live_display_night", 1) == 1;
         boolean useNightTheme = Settings.System.getInt(mContentResolver,
                 "nightmode_use_night_theme", 0) == 1;
-        int interruptions = Settings.System.getInt(mContentResolver, "nightmode_interruptions", -1);
+        int interruptions = Settings.System.getInt(mContentResolver, "nightmode_interruptions", 1);
         boolean muteMedia = Settings.System.getInt(mContentResolver,
-                "nightmode_mute_media_sound", 0) == 1;
+                "nightmode_mute_media_sound", 1) == 1;
 
         if (lowBrightness) {
             setNightModePreference(Settings.System.SCREEN_BRIGHTNESS, 1, 100);
@@ -155,20 +152,20 @@ public class NightModeUI extends SystemUI {
 
     private void disableNightMode() {
         boolean lowBrightness = Settings.System.getInt(mContentResolver,
-                "nightmode_low_brightness", 0) == 1;
+                "nightmode_low_brightness", 1) == 1;
         boolean disableBatteryLight = Settings.System.getInt(mContentResolver,
-                "nightmode_disable_battery_light", 0) == 1;
+                "nightmode_disable_battery_light", 1) == 1;
         boolean disableNotificationLight = Settings.System.getInt(mContentResolver,
-                "nightmode_disable_notification_light", 0) == 1;
+                "nightmode_disable_notification_light", 1) == 1;
         boolean ambientDisplay = Settings.System.getInt(mContentResolver,
-                "nightmode_ambient_display", 0) == 1;
+                "nightmode_ambient_display", 1) == 1;
         boolean liveDisplayNightMode = Settings.System.getInt(mContentResolver,
-                "nightmode_live_display_night", 0) == 1;
+                "nightmode_live_display_night", 1) == 1;
         boolean useNightTheme = Settings.System.getInt(mContentResolver,
                 "nightmode_use_night_theme", 0) == 1;
-        int interruptions = Settings.System.getInt(mContentResolver, "nightmode_interruptions", -1);
+        int interruptions = Settings.System.getInt(mContentResolver, "nightmode_interruptions", 1);
         boolean muteMedia = Settings.System.getInt(mContentResolver,
-                "nightmode_mute_media_sound", 0) == 1;
+                "nightmode_mute_media_sound", 1) == 1;
         if (lowBrightness) {
             setDayModePreference(Settings.System.SCREEN_BRIGHTNESS, 100);
             setDayModePreference(Settings.System.SCREEN_BRIGHTNESS_MODE,
