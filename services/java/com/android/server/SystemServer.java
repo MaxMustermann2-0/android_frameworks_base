@@ -622,7 +622,7 @@ public final class SystemServer {
             ActivityManagerNative.getDefault().showBootMessage(
                     context.getResources().getText(
                             com.android.internal.R.string.android_upgrading_starting_apps),
-                    false);
+                    false, -1);
         } catch (RemoteException e) {
         }
 
