@@ -1278,12 +1278,13 @@ please see themes_device_defaults.xml.
 
     <!-- Default theme for Settings and activities launched from Settings. -->
     <style name="Theme.Material.Settings" parent="Theme.Material.Light.DarkActionBar">
-        <item name="colorPrimary">@color/settigs_color_primary</item>
-        <item name="colorPrimaryDark">@color/settigs_color_secondary</item>
-        <item name="colorAccent">@color/settigs_color_accent</item>
+        <item name="colorPrimary">@color/settings_color_primary</item>
+        <item name="colorPrimaryDark">@color/settings_color_secondary</item>
+        <item name="colorAccent">@color/settings_color_accent</item>
         <item name="presentationTheme">@style/Theme.Material.Settings.Dialog.Presentation</item>
         <item name="searchDialogTheme">@style/Theme.Material.Settings.SearchBar</item>
         <item name="panelMenuListTheme">@style/Theme.Material.Settings.CompactMenu</item>
+        <item name="windowIsTranslucent">true</item>
     </style>
 
     <!-- Default theme for Settings and activities launched from Settings. -->

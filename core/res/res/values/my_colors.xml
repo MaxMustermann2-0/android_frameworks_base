@@ -1,7 +1,7 @@
 <resources>
-    <color name="settigs_color_primary">#00BCD4</color>
-    <color name="settigs_color_secondary">#00ACC1</color>
-    <color name="settigs_color_accent">#616161</color>
+    <color name="settings_color_primary">#4DB6AC</color>
+    <color name="settings_color_secondary">#26A69A</color>
+    <color name="settings_color_accent">#607D8B</color>
     <color name="system_primary_color">#ffffff</color>
     <color name="system_secondary_color">#607D8B</color>
     <color name="system_accent_color">#8BC34A</color>
