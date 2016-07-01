@@ -18,4 +18,7 @@
     <string name="no_results">Nothing found</string>
     <string name="no_application"><![CDATA[No application found for this kind of data!]]></string>
     <string name="confirm_deletion">%s will be deleted. Continue?</string>
+    <string name="quick_settings_clipboard_label">Clipboard</string>
+    <string name="clipboard_empty_label">Clipboard is empty.</string>
+    <string name="copied_to_clipboard">Copied to clipboard.</string>
 </resources>

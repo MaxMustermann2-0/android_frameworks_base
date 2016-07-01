@@ -45,6 +45,7 @@ import com.android.systemui.qs.tiles.BluetoothTile;
 import com.android.systemui.qs.tiles.CaffeineTile;
 import com.android.systemui.qs.tiles.CastTile;
 import com.android.systemui.qs.tiles.CellularTile;
+import com.android.systemui.qs.tiles.ClipboardTile;
 import com.android.systemui.qs.tiles.ColorInversionTile;
 import com.android.systemui.qs.tiles.CompassTile;
 import com.android.systemui.qs.tiles.CustomQSTile;
@@ -373,6 +374,7 @@ public class QSTileHost implements QSTile.Host, Tunable {
         else if (tileSpec.equals("battery_saver")) return new BatterySaverTile(this);
         else if (tileSpec.equals("caffeine")) return new CaffeineTile(this);
         else if (tileSpec.equals("night_mode")) return new NightModeTile(this);
+        else if (tileSpec.equals("clipboard")) return new ClipboardTile(this);
         else if (tileSpec.startsWith(IntentTile.PREFIX)) return IntentTile.create(this,tileSpec);
         else if (TextUtils.split(tileSpec, "\\|").length == 3) {
             /** restores placeholder for
@@ -471,6 +473,7 @@ public class QSTileHost implements QSTile.Host, Tunable {
         else if (spec.equals("battery_saver")) return R.string.quick_settings_battery_saver_label;
         else if (spec.equals("night_mode")) return R.string.qs_nightmode_label;
         else if (spec.equals("caffeine")) return R.string.quick_settings_caffeine_label;
+        else if (spec.equals("clipboard")) return R.string.quick_settings_clipboard_label;
         return 0;
     }
 
@@ -502,6 +505,7 @@ public class QSTileHost implements QSTile.Host, Tunable {
         else if (spec.equals("battery_saver")) return R.drawable.ic_qs_battery_saver_on;
         else if (spec.equals("night_mode")) return R.drawable.ic_qs_nightmode_on;
         else if (spec.equals("caffeine")) return R.drawable.ic_qs_caffeine_on;
+        else if (spec.equals("clipboard")) return R.drawable.ic_qs_clipboard;
         return 0;
     }
 

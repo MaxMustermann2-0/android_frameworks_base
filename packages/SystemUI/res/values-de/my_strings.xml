@@ -18,4 +18,7 @@
     <string name="no_results">Nichts gefunden</string>
     <string name="no_application"><![CDATA[Keine Anwendung für diesen Datentyp gefunden!]]></string>
     <string name="confirm_deletion">%s wird gelöscht. Fortfahren?</string>
+    <string name="quick_settings_clipboard_label">Zwischenablage</string>
+    <string name="clipboard_empty_label">Zwischenablage ist leer.</string>
+    <string name="copied_to_clipboard">In Zwischenablage kopiert.</string>
 </resources>
