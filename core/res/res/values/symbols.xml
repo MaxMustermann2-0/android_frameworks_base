@@ -1354,7 +1354,6 @@
   <java-symbol type="layout" name="preference_list_fragment" />
   <java-symbol type="layout" name="preference_widget_seekbar" />
   <java-symbol type="layout" name="progress_dialog" />
-  <java-symbol type="layout" name="boot_progress_dialog" />
   <java-symbol type="layout" name="resolve_list_item" />
   <java-symbol type="layout" name="select_dialog_singlechoice_holo" />
   <java-symbol type="layout" name="ssl_certificate" />

@@ -20,7 +20,6 @@ package com.android.server.power;
 
 import android.app.ActivityManagerNative;
 import android.app.AlertDialog;
-import android.app.BootProgressDialog;
 import android.app.Dialog;
 import android.app.IActivityManager;
 import android.app.KeyguardManager;
@@ -61,11 +60,9 @@ import android.widget.ListView;
 import com.android.internal.telephony.ITelephony;
 import com.android.server.pm.PackageManagerService;
 import com.android.server.power.PowerManagerService;
-
 import android.util.Log;
 import android.view.IWindowManager;
 import android.view.WindowManager;
-
 import java.lang.reflect.Method;
 
 import cyanogenmod.providers.CMSettings;
@@ -87,10 +84,10 @@ public final class ShutdownThread extends Thread {
     private static final String TAG = "ShutdownThread";
     private static final int PHONE_STATE_POLL_SLEEP_MSEC = 500;
     // maximum time we wait for the shutdown broadcast before going on.
-    private static final int MAX_BROADCAST_TIME = 10 * 1000;
-    private static final int MAX_SHUTDOWN_WAIT_TIME = 20 * 1000;
-    private static final int MAX_RADIO_WAIT_TIME = 12 * 1000;
-    private static final int MAX_UNCRYPT_WAIT_TIME = 15 * 60 * 1000;
+    private static final int MAX_BROADCAST_TIME = 10*1000;
+    private static final int MAX_SHUTDOWN_WAIT_TIME = 20*1000;
+    private static final int MAX_RADIO_WAIT_TIME = 12*1000;
+    private static final int MAX_UNCRYPT_WAIT_TIME = 15*60*1000;
     // constants for progress bar. the values are roughly estimated based on timeout.
     private static final int BROADCAST_STOP_PERCENT = 2;
     private static final int ACTIVITY_MANAGER_STOP_PERCENT = 4;
@@ -155,7 +152,6 @@ public final class ShutdownThread extends Thread {
     private ProgressDialog mProgressDialog;
 
     private static AudioManager mAudioManager;
-
     private ShutdownThread() {
     }
 
@@ -213,12 +209,12 @@ public final class ShutdownThread extends Thread {
             }
         }
         final int longPressBehavior = context.getResources().getInteger(
-                com.android.internal.R.integer.config_longPressOnPowerBehavior);
+                        com.android.internal.R.integer.config_longPressOnPowerBehavior);
         int resourceId = mRebootSafeMode
                 ? com.android.internal.R.string.reboot_safemode_confirm
                 : (longPressBehavior == 2
-                ? com.android.internal.R.string.shutdown_confirm_question
-                : com.android.internal.R.string.shutdown_confirm);
+                        ? com.android.internal.R.string.shutdown_confirm_question
+                        : com.android.internal.R.string.shutdown_confirm);
         if (showRebootOption && !mRebootSafeMode) {
             resourceId = com.android.internal.R.string.reboot_confirm;
         }
@@ -238,15 +234,15 @@ public final class ShutdownThread extends Thread {
                     .setTitle(mRebootSafeMode
                             ? com.android.internal.R.string.reboot_safemode_title
                             : showRebootOption
-                            ? com.android.internal.R.string.reboot_title
-                            : com.android.internal.R.string.power_off);
+                                    ? com.android.internal.R.string.reboot_title
+                                    : com.android.internal.R.string.power_off);
 
             if (!advancedReboot || mRebootSafeMode) {
                 confirmDialogBuilder.setMessage(resourceId);
             } else {
                 confirmDialogBuilder
-                        .setSingleChoiceItems(com.android.internal.R.array.shutdown_reboot_options,
-                                0, null);
+                      .setSingleChoiceItems(com.android.internal.R.array.shutdown_reboot_options,
+                              0, null);
             }
 
             confirmDialogBuilder.setPositiveButton(com.android.internal.R.string.yes,
@@ -255,7 +251,7 @@ public final class ShutdownThread extends Thread {
                         public void onClick(DialogInterface dialog, int which) {
                             if (!mRebootSafeMode && advancedReboot) {
                                 boolean softReboot = false;
-                                ListView reasonsList = ((AlertDialog) dialog).getListView();
+                                ListView reasonsList = ((AlertDialog)dialog).getListView();
                                 int selected = reasonsList.getCheckedItemPosition();
                                 if (selected != ListView.INVALID_POSITION) {
                                     String actions[] = context.getResources().getStringArray(
@@ -272,8 +268,8 @@ public final class ShutdownThread extends Thread {
                                 mReboot = true;
                             }
                             beginShutdownSequence(context);
-                        }
-                    });
+                      }
+                  });
 
             confirmDialogBuilder.setNegativeButton(com.android.internal.R.string.no, null);
             sConfirmDialog = confirmDialogBuilder.create();
@@ -290,7 +286,7 @@ public final class ShutdownThread extends Thread {
     private static void doSoftReboot() {
         try {
             final IActivityManager am =
-                    ActivityManagerNative.asInterface(ServiceManager.checkService("activity"));
+                  ActivityManagerNative.asInterface(ServiceManager.checkService("activity"));
             if (am != null) {
                 am.restart();
             }
@@ -326,7 +322,7 @@ public final class ShutdownThread extends Thread {
      * is shown.
      *
      * @param context Context used to display the shutdown progress dialog.
-     * @param reason  code to pass to the kernel (e.g. "recovery"), or null.
+     * @param reason code to pass to the kernel (e.g. "recovery"), or null.
      * @param confirm true if user confirmation is needed before shutting down.
      */
     public static void reboot(final Context context, String reason, boolean confirm) {
@@ -341,7 +337,7 @@ public final class ShutdownThread extends Thread {
     private static String getShutdownMusicFilePath() {
         final String[] fileName = {OEM_SHUTDOWN_MUSIC_FILE, SHUTDOWN_MUSIC_FILE};
         File checkFile = null;
-        for (String music : fileName) {
+        for(String music : fileName) {
             checkFile = new File(music);
             if (checkFile.exists()) {
                 return music;
@@ -359,7 +355,6 @@ public final class ShutdownThread extends Thread {
             Log.w(TAG, "boot animation can not lock device!");
         }
     }
-
     /**
      * Request a reboot into safe mode.  Must be called from a Looper thread in which its UI
      * is shown.
@@ -390,8 +385,7 @@ public final class ShutdownThread extends Thread {
         }
 
         // Throw up a system dialog to indicate the device is rebooting / shutting down.
-        int theme = com.android.internal.R.style.Theme_Material_Light_NoActionBar_Fullscreen;
-        BootProgressDialog pd = new BootProgressDialog(context, theme, null, null, -1);
+        ProgressDialog pd = new ProgressDialog(context);
 
         // Path 1: Reboot to recovery and install the update
         //   Condition: mRebootReason == REBOOT_RECOVERY and mRebootUpdate == True
@@ -418,15 +412,21 @@ public final class ShutdownThread extends Thread {
                 pd.setTitle(context.getText(com.android.internal.R.string.reboot_to_update_title));
                 pd.setMessage(context.getText(
                         com.android.internal.R.string.reboot_to_update_prepare));
+                pd.setMax(100);
+                pd.setProgressNumberFormat(null);
+                pd.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
                 pd.setProgress(0);
+                pd.setIndeterminate(false);
             } else if (mRebootWipe) {
                 // Factory reset path. Set the dialog message accordingly.
                 pd.setTitle(context.getText(com.android.internal.R.string.reboot_to_reset_title));
                 pd.setMessage(context.getText(
                         com.android.internal.R.string.reboot_to_reset_message));
+                pd.setIndeterminate(true);
             } else {
                 pd.setTitle(context.getText(com.android.internal.R.string.reboot_title));
                 pd.setMessage(context.getText(com.android.internal.R.string.reboot_progress));
+                pd.setIndeterminate(true);
             }
         } else {
             if (mReboot) {
@@ -436,6 +436,7 @@ public final class ShutdownThread extends Thread {
                 pd.setTitle(context.getText(com.android.internal.R.string.power_off));
                 pd.setMessage(context.getText(com.android.internal.R.string.shutdown_progress));
             }
+            pd.setIndeterminate(true);
         }
 
         //acquire audio focus to make the other apps to stop playing muisc
@@ -454,7 +455,7 @@ public final class ShutdownThread extends Thread {
 
         sInstance.mProgressDialog = pd;
         sInstance.mContext = context;
-        sInstance.mPowerManager = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+        sInstance.mPowerManager = (PowerManager)context.getSystemService(Context.POWER_SERVICE);
 
         // make sure we never fall asleep again
         sInstance.mCpuWakeLock = null;
@@ -501,8 +502,7 @@ public final class ShutdownThread extends Thread {
      */
     public void run() {
         BroadcastReceiver br = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
+            @Override public void onReceive(Context context, Intent intent) {
                 // We don't allow apps to cancel this, so ignore the result.
                 actionDone();
             }
@@ -543,7 +543,7 @@ public final class ShutdownThread extends Thread {
                     Log.w(TAG, "Shutdown broadcast timed out");
                     break;
                 } else if (mRebootUpdate) {
-                    int status = (int) ((MAX_BROADCAST_TIME - delay) * 1.0 *
+                    int status = (int)((MAX_BROADCAST_TIME - delay) * 1.0 *
                             BROADCAST_STOP_PERCENT / MAX_BROADCAST_TIME);
                     sInstance.setRebootProgress(status, null);
                 }
@@ -560,7 +560,7 @@ public final class ShutdownThread extends Thread {
         Log.i(TAG, "Shutting down activity manager...");
 
         final IActivityManager am =
-                ActivityManagerNative.asInterface(ServiceManager.checkService("activity"));
+            ActivityManagerNative.asInterface(ServiceManager.checkService("activity"));
         if (am != null) {
             try {
                 am.shutdown(MAX_BROADCAST_TIME);
@@ -574,7 +574,7 @@ public final class ShutdownThread extends Thread {
         Log.i(TAG, "Shutting down package manager...");
 
         final PackageManagerService pm = (PackageManagerService)
-                ServiceManager.getService("package");
+            ServiceManager.getService("package");
         if (pm != null) {
             pm.shutdown();
         }
@@ -586,7 +586,7 @@ public final class ShutdownThread extends Thread {
 
         //showShutdownAnimation() is called from here to sync
         //music and animation properly
-        if (checkAnimationFileExist()) {
+        if(checkAnimationFileExist()) {
             lockDevice();
             showShutdownAnimation();
 
@@ -663,7 +663,7 @@ public final class ShutdownThread extends Thread {
                     Log.w(TAG, "Shutdown wait timed out");
                     break;
                 } else if (mRebootUpdate) {
-                    int status = (int) ((MAX_SHUTDOWN_WAIT_TIME - delay) * 1.0 *
+                    int status = (int)((MAX_SHUTDOWN_WAIT_TIME - delay) * 1.0 *
                             (MOUNT_SERVICE_STOP_PERCENT - RADIO_STOP_PERCENT) /
                             MAX_SHUTDOWN_WAIT_TIME);
                     status += RADIO_STOP_PERCENT;
@@ -710,7 +710,7 @@ public final class ShutdownThread extends Thread {
                         ITelephony.Stub.asInterface(ServiceManager.checkService("phone"));
                 final IBluetoothManager bluetooth =
                         IBluetoothManager.Stub.asInterface(ServiceManager.checkService(
-                                BluetoothAdapter.BLUETOOTH_MANAGER_SERVICE));
+                        BluetoothAdapter.BLUETOOTH_MANAGER_SERVICE));
 
                 try {
                     nfcOff = nfc == null || nfc.getState() == NfcAdapter.STATE_OFF;
@@ -719,7 +719,7 @@ public final class ShutdownThread extends Thread {
                         nfc.disable(false); // Don't persist new state
                     }
                 } catch (RemoteException ex) {
-                    Log.e(TAG, "RemoteException during NFC shutdown", ex);
+                Log.e(TAG, "RemoteException during NFC shutdown", ex);
                     nfcOff = true;
                 }
 
@@ -750,7 +750,7 @@ public final class ShutdownThread extends Thread {
                 long delay = endTime - SystemClock.elapsedRealtime();
                 while (delay > 0) {
                     if (mRebootUpdate) {
-                        int status = (int) ((timeout - delay) * 1.0 *
+                        int status = (int)((timeout - delay) * 1.0 *
                                 (RADIO_STOP_PERCENT - PACKAGE_MANAGER_STOP_PERCENT) / timeout);
                         status += PACKAGE_MANAGER_STOP_PERCENT;
                         sInstance.setRebootProgress(status, null);
@@ -817,8 +817,8 @@ public final class ShutdownThread extends Thread {
      * or {@link #shutdown(Context, boolean)} instead.
      *
      * @param context Context used to vibrate or null without vibration
-     * @param reboot  true to reboot or false to shutdown
-     * @param reason  reason for reboot
+     * @param reboot true to reboot or false to shutdown
+     * @param reason reason for reboot
      */
     public static void rebootOrShutdown(final Context context, boolean reboot, String reason) {
         deviceRebootOrShutdown(reboot, reason);
@@ -887,7 +887,7 @@ public final class ShutdownThread extends Thread {
                                 // Update status
                                 Log.d(TAG, "uncrypt read status: " + status);
                                 // Scale down to [MOUNT_SERVICE_STOP_PERCENT, 100).
-                                status = (int) (status * (100.0 - MOUNT_SERVICE_STOP_PERCENT) / 100);
+                                status = (int)(status * (100.0 - MOUNT_SERVICE_STOP_PERCENT) / 100);
                                 status += MOUNT_SERVICE_STOP_PERCENT;
                                 CharSequence msg = mContext.getText(
                                         com.android.internal.R.string.reboot_to_update_package);
@@ -932,14 +932,14 @@ public final class ShutdownThread extends Thread {
         try {
             cl = Class.forName(deviceShutdownClassName);
             Method m;
-            try {
-                m = cl.getMethod("rebootOrShutdown", new Class[]{boolean.class, String.class});
-                m.invoke(cl.newInstance(), reboot, reason);
-            } catch (NoSuchMethodException ex) {
-                Log.e(TAG, "rebootOrShutdown method not found in class " + deviceShutdownClassName);
-            } catch (Exception ex) {
-                Log.e(TAG, "Unknown exception hit while trying to invode rebootOrShutdown");
-            }
+                try {
+                    m = cl.getMethod("rebootOrShutdown", new Class[] {boolean.class, String.class});
+                    m.invoke(cl.newInstance(), reboot, reason);
+                } catch (NoSuchMethodException ex) {
+                    Log.e(TAG, "rebootOrShutdown method not found in class " + deviceShutdownClassName);
+                } catch (Exception ex) {
+                    Log.e(TAG, "Unknown exception hit while trying to invode rebootOrShutdown");
+                }
         } catch (ClassNotFoundException e) {
             Log.e(TAG, "Unable to find class " + deviceShutdownClassName);
         } catch (Exception e) {
@@ -978,7 +978,8 @@ public final class ShutdownThread extends Thread {
         public void handleMessage(Message msg) {
             String path = (String) msg.obj;
             mMediaPlayer = new MediaPlayer();
-            try {
+            try
+            {
                 mMediaPlayer.reset();
                 mMediaPlayer.setDataSource(path);
                 mMediaPlayer.prepare();
@@ -1004,7 +1005,7 @@ public final class ShutdownThread extends Thread {
             uiContext = ThemeUtils.createUiContext(context);
             if (context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEVISION)) {
                 uiContext.setTheme(com.android.internal.R.style.Theme_Leanback_Dialog_Alert);
-            } else {
+            } else  {
                 uiContext.setTheme(android.R.style.Theme_DeviceDefault_Light_DarkActionBar);
             }
         }

@@ -5959,7 +5959,7 @@ public class WindowManagerService extends IWindowManager.Stub
         return true;
     }
 
-    public void showBootMessage(final CharSequence msg, final boolean always, final int progress) {
+    public void showBootMessage(final CharSequence msg, final boolean always) {
         boolean first = false;
         synchronized(mWindowMap) {
             if (DEBUG_BOOT) {
@@ -5983,7 +5983,7 @@ public class WindowManagerService extends IWindowManager.Stub
                 return;
             }
             mShowingBootMessages = true;
-            mPolicy.showBootMessage(msg, always, progress);
+            mPolicy.showBootMessage(msg, always);
         }
         if (first) {
             performEnableScreen();
