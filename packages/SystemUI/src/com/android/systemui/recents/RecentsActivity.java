@@ -819,6 +819,7 @@ public class RecentsActivity extends Activity implements RecentsView.RecentsView
     private void collapseSearch() {
         if (!mSearchExpanded) return;
         mSearchExpanded = false;
+        mSearch.setText("");
         findViewById(R.id.grid_empty_view).setVisibility(View.GONE);
         AlphaAnimation alphaAnim = new AlphaAnimation(1f, 0f);
         alphaAnim.setDuration(300);
